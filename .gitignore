@@ -1,0 +1,10 @@
+# Generated workbooks may embed a local API key during development.
+*.xlsm
+~$*.xlsm
+
+# Local workspaces can contain user files and test output.
+workspace/
+
+# Windows and editor artifacts.
+Thumbs.db
+.vs/
