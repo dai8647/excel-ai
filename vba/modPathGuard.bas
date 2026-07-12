@@ -60,3 +60,55 @@ End Function
 Public Function RequireSafePath(ByVal inputPath As String) As String
     RequireSafePath = ResolveSafePath(inputPath)
 End Function
+
+Public Function WorkspaceSafetyReport() As String
+    Dim workspace As String
+    Dim safePath As String
+    Dim escapePath As String
+    Dim insideOk As Boolean
+    Dim parentBlocked As Boolean
+    Dim outsideBlocked As Boolean
+
+    On Error GoTo ErrHandler
+    workspace = GetWorkspacePath()
+    safePath = ResolveSafePath("README.txt")
+    insideOk = IsPathInWorkspace(safePath)
+    parentBlocked = PathGuardRejects("..\workspace-escape-test.txt")
+    escapePath = NormalizePath(workspace & "\..\workspace-escape-test.txt")
+    outsideBlocked = PathGuardRejects(escapePath)
+
+    If insideOk And parentBlocked And outsideBlocked Then
+        WorkspaceSafetyReport = "Workspace safety: OK" & vbCrLf & _
+            "Folder: " & workspace & vbCrLf & _
+            "Inside path: OK" & vbCrLf & _
+            "Parent traversal: BLOCKED" & vbCrLf & _
+            "Outside absolute path: BLOCKED"
+    Else
+        WorkspaceSafetyReport = "Workspace safety: REVIEW" & vbCrLf & _
+            "Folder: " & workspace & vbCrLf & _
+            "Inside path: " & IIf(insideOk, "OK", "REVIEW") & vbCrLf & _
+            "Parent traversal: " & IIf(parentBlocked, "BLOCKED", "REVIEW") & vbCrLf & _
+            "Outside absolute path: " & IIf(outsideBlocked, "BLOCKED", "REVIEW")
+    End If
+    Exit Function
+
+ErrHandler:
+    WorkspaceSafetyReport = "Workspace safety: ERROR" & vbCrLf & Err.Description
+End Function
+
+Public Sub WorkspaceSafetyCheck()
+    Dim report As String
+    report = WorkspaceSafetyReport()
+    Ops_WriteStatus report, (InStr(1, report, "Workspace safety: OK", vbTextCompare) = 0)
+    MsgBox report, vbInformation, "Workspace safety"
+End Sub
+
+Private Function PathGuardRejects(ByVal inputPath As String) As Boolean
+    Dim resolved As String
+    On Error Resume Next
+    Err.Clear
+    resolved = ResolveSafePath(inputPath)
+    PathGuardRejects = (Err.Number <> 0)
+    Err.Clear
+    On Error GoTo 0
+End Function

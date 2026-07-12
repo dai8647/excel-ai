@@ -162,12 +162,13 @@ try {
         @("3. Open request panel", "ShowAgent", $navy),
         @("4. Run request", "RunSheetPrompt", $green),
         @("Open workspace", "OpenWorkspaceFolder", $amber),
-        @("Clear chat log", "ClearChatLog", $muted)
+        @("Clear chat log", "ClearChatLog", $muted),
+        @("Workspace safety", "WorkspaceSafetyCheck", $teal)
     )
     $buttonIndex = 0
     foreach ($spec in $buttonSpecs) {
-        $buttonRow = [math]::Floor($buttonIndex / 3)
-        $buttonColumn = $buttonIndex % 3
+        $buttonRow = [math]::Floor($buttonIndex / 4)
+        $buttonColumn = $buttonIndex % 4
         $button = $ops.Buttons().Add((20 + ($buttonColumn * 240)), (60 + ($buttonRow * 42)), 220, 30)
         $button.Characters().Text = $spec[0]
         $button.OnAction = $spec[1]
