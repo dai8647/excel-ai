@@ -1,6 +1,12 @@
 Attribute VB_Name = "modJson"
 Option Explicit
 
+Public Type ToolCallItem
+    id As String
+    toolName As String
+    argumentsJson As String
+End Type
+
 Public Function JsonEscape(ByVal s As String) As String
     Dim i As Long
     Dim ch As String
@@ -80,12 +86,6 @@ End Sub
 Public Function JsonExtractFirstContent(ByVal json As String) As String
     JsonExtractFirstContent = JsonExtractString(json, "content")
 End Function
-
-Public Type ToolCallItem
-    id As String
-    toolName As String
-    argumentsJson As String
-End Type
 
 Public Function JsonParseToolCalls(ByVal json As String, ByRef calls() As ToolCallItem) As Long
     Dim count As Long
@@ -194,12 +194,12 @@ Public Function JsonHasToolCalls(ByVal json As String) As Boolean
 End Function
 
 Public Function JsonBuildToolResult(ByVal toolCallId As String, ByVal content As String) As String
-    JsonBuildToolResult = "{\"role\":\"tool\",\"tool_call_id\":" & JsonString(toolCallId) & _
-        ",\"content\":" & JsonString(content) & "}"
+    JsonBuildToolResult = "{""role"":""tool"",""tool_call_id"":" & JsonString(toolCallId) & _
+        ",""content"":" & JsonString(content) & "}"
 End Function
 
 Public Function JsonBuildUserMessage(ByVal content As String) As String
-    JsonBuildUserMessage = "{\"role\":\"user\",\"content\":" & JsonString(content) & "}"
+    JsonBuildUserMessage = "{""role"":""user"",""content"":" & JsonString(content) & "}"
 End Function
 
 Public Function JsonBuildAssistantToolCallsMessage(ByVal rawAssistantJson As String) As String

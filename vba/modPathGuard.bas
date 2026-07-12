@@ -17,7 +17,7 @@ Public Function ResolveSafePath(ByVal inputPath As String) As String
         Err.Raise vbObjectError + 1002, "PathGuard", "親ディレクトリ参照 (..) は禁止です"
     End If
 
-    If fso.IsAbsolutePathName(inputPath) Then
+    If (Len(inputPath) >= 2 And Mid$(inputPath, 2, 1) = ":") Or Left$(inputPath, 2) = "\\" Then
         candidate = NormalizePath(inputPath)
     Else
         candidate = NormalizePath(fso.BuildPath(workspace, inputPath))

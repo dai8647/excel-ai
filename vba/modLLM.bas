@@ -1,7 +1,7 @@
 Attribute VB_Name = "modLLM"
 Option Explicit
 
-Private Const API_TIMEOUT_MS As Long = 120000
+Private Const API_TIMEOUT_MS As Long = 15000
 
 Public Function LLM_TestConnection() As String
     Dim body As String
@@ -93,6 +93,7 @@ Private Function HttpPostJson(ByVal url As String, ByVal jsonBody As String, ByV
     http.Open "POST", url, False
     http.SetTimeouts API_TIMEOUT_MS, API_TIMEOUT_MS, API_TIMEOUT_MS, API_TIMEOUT_MS
     ApplyHeaders http, useAnthropicHeaders
+    http.SetRequestHeader "Connection", "close"
     http.Send jsonBody
     If http.Status >= 400 Then Err.Raise vbObjectError + 2001, "LLM", "HTTP " & http.Status & ": " & http.ResponseText
     HttpPostJson = http.ResponseText
@@ -104,6 +105,7 @@ Private Function HttpGetJson(ByVal url As String, ByVal useAnthropicHeaders As B
     http.Open "GET", url, False
     http.SetTimeouts API_TIMEOUT_MS, API_TIMEOUT_MS, API_TIMEOUT_MS, API_TIMEOUT_MS
     ApplyHeaders http, useAnthropicHeaders
+    http.SetRequestHeader "Connection", "close"
     http.Send
     If http.Status >= 400 Then Err.Raise vbObjectError + 2002, "LLM", "HTTP " & http.Status & ": " & http.ResponseText
     HttpGetJson = http.ResponseText

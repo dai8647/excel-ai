@@ -9,7 +9,7 @@ Public Function Tools_GetDefinitionsJson() As String
         ToolDef("append_file", "Append text to a file", "{""path"":{""type"":""string""},""content"":{""type"":""string""}}") & "," & _
         ToolDef("move_file", "Move or rename a file/folder", "{""source"":{""type"":""string""},""destination"":{""type"":""string""}}") & "," & _
         ToolDef("delete_file", "Delete a file (requires confirmation setting)", "{""path"":{""type"":""string""}}") & "," & _
-        ToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string"",""description"":""e.g. data\*.csv""},""output_path"":{""type"":""string""}}") & "," & _
+        ToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string"",""description"":""e.g. data\\*.csv""},""output_path"":{""type"":""string""}}") & "," & _
         ToolDef("create_excel", "Create a new Excel workbook from CSV-like data", "{""path"":{""type"":""string"",""description"":""Output .xlsx path""},""sheet_name"":{""type"":""string""},""csv_content"":{""type"":""string"",""description"":""Comma-separated rows, newline-separated lines""}}") & "," & _
         ToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & _
         "]"
@@ -119,9 +119,9 @@ End Function
 
 Private Function Tool_ListDir(ByVal path As String) As String
     Dim fso As Object
-    Dim folder As Object
-    Dim f As Object
     Dim safePath As String
+    Dim entry As String
+    Dim fullPath As String
     Dim result As String
 
     Set fso = CreateObject("Scripting.FileSystemObject")
@@ -133,13 +133,18 @@ Private Function Tool_ListDir(ByVal path As String) As String
         Exit Function
     End If
 
-    Set folder = fso.GetFolder(safePath)
-    For Each f In folder.SubFolders
-        result = result & "[DIR]  " & f.Name & vbCrLf
-    Next f
-    For Each f In folder.Files
-        result = result & "[FILE] " & f.Name & " (" & f.Size & " bytes)" & vbCrLf
-    Next f
+    entry = Dir$(safePath & "\*", vbNormal Or vbHidden Or vbSystem Or vbDirectory)
+    Do While Len(entry) > 0
+        If entry <> "." And entry <> ".." Then
+            fullPath = safePath & "\" & entry
+            If (GetAttr(fullPath) And vbDirectory) = vbDirectory Then
+                result = result & "[DIR]  " & entry & vbCrLf
+            Else
+                result = result & "[FILE] " & entry & " (" & FileLen(fullPath) & " bytes)" & vbCrLf
+            End If
+        End If
+        entry = Dir$()
+    Loop
 
     If Len(result) = 0 Then result = "(空のフォルダ)"
     Tool_ListDir = result
