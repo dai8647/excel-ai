@@ -3,6 +3,18 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $xlsmPath = Join-Path $root "ExcelAI.xlsm"
 $vbaDir = Join-Path $root "vba"
+$navy = 5058583
+$deepNavy = 3342091
+$blue = 11561003
+$teal = 7366159
+$green = 4879126
+$amber = 423385
+$lightBlue = 16317162
+$pale = 16513783
+$inputFill = 15132671
+$line = 14735307
+$muted = 9122404
+$white = 16777215
 $routerKey = ""
 $routerDb = Join-Path $env:APPDATA "9router\db\data.sqlite"
 $sqliteModule = Join-Path $env:APPDATA "9router\runtime\node_modules\better-sqlite3"
@@ -43,13 +55,14 @@ try {
     $readme.Tab.Color = 5296274
     $readme.Range("A1:H1").Merge()
     $readme.Cells.Item(1, 1).Value2 = "ExcelAI | README"
-    $readme.Range("A1:H1").Interior.Color = 3158064
-    $readme.Range("A1:H1").Font.Color = 16777215
+    $readme.Range("A1:H1").Interior.Color = $navy
+    $readme.Range("A1:H1").Font.Color = $white
     $readme.Range("A1:H1").Font.Bold = $true
     $readme.Range("A1:H1").Font.Size = 18
     $readme.Range("A2:H2").Merge()
     $readme.Cells.Item(2, 1).Value2 = "Start here: set your provider, test the connection, then run a request."
-    $readme.Range("A2:H2").Font.Color = 8421504
+    $readme.Range("A2:H2").Interior.Color = $pale
+    $readme.Range("A2:H2").Font.Color = $muted
     $readme.Range("A2:H2").Font.Size = 11
     $readme.Columns.Item("A").ColumnWidth = 18
     $readme.Columns.Item("B").ColumnWidth = 24
@@ -66,7 +79,8 @@ try {
             "SECTION" {
                 $readme.Range("A${readmeRow}:H${readmeRow}").Merge()
                 $readme.Cells.Item($readmeRow, 1).Value2 = $parts[1]
-                $readme.Range("A${readmeRow}:H${readmeRow}").Interior.Color = 12632256
+                $readme.Range("A${readmeRow}:H${readmeRow}").Interior.Color = $blue
+                $readme.Range("A${readmeRow}:H${readmeRow}").Font.Color = $white
                 $readme.Range("A${readmeRow}:H${readmeRow}").Font.Bold = $true
                 $readme.Rows.Item($readmeRow).RowHeight = 24
                 $readmeRow += 1
@@ -76,6 +90,8 @@ try {
                 $readme.Cells.Item($readmeRow, 2).Value2 = $parts[2]
                 $readme.Range("C${readmeRow}:H${readmeRow}").Merge()
                 $readme.Cells.Item($readmeRow, 3).Value2 = $parts[3]
+                $readme.Range("A${readmeRow}:B${readmeRow}").Interior.Color = $lightBlue
+                $readme.Range("C${readmeRow}:H${readmeRow}").Interior.Color = $pale
                 $readme.Range("A${readmeRow}:B${readmeRow}").Font.Bold = $true
                 $readme.Rows.Item($readmeRow).RowHeight = 38
                 $readmeRow += 1
@@ -85,6 +101,9 @@ try {
                 $readme.Cells.Item($readmeRow, 2).Value2 = $parts[2]
                 $readme.Range("C${readmeRow}:H${readmeRow}").Merge()
                 $readme.Cells.Item($readmeRow, 3).Value2 = $parts[3]
+                $readme.Range("A${readmeRow}").Interior.Color = $lightBlue
+                $readme.Range("B${readmeRow}").Interior.Color = $inputFill
+                $readme.Range("C${readmeRow}:H${readmeRow}").Interior.Color = $pale
                 $readme.Cells.Item($readmeRow, 1).Font.Bold = $true
                 $readme.Rows.Item($readmeRow).RowHeight = 38
                 $readmeRow += 1
@@ -92,7 +111,8 @@ try {
             "NOTE" {
                 $readme.Range("A${readmeRow}:H${readmeRow}").Merge()
                 $readme.Cells.Item($readmeRow, 1).Value2 = $parts[1]
-                $readme.Range("A${readmeRow}:H${readmeRow}").Font.Color = 8421504
+                $readme.Range("A${readmeRow}:H${readmeRow}").Interior.Color = $pale
+                $readme.Range("A${readmeRow}:H${readmeRow}").Font.Color = $muted
                 $readme.Rows.Item($readmeRow).RowHeight = 30
                 $readmeRow += 1
             }
@@ -103,6 +123,7 @@ try {
     $readme.Rows.Item(2).RowHeight = 24
 
     $ws = $wb.Worksheets.Item(2)
+    $ws.Tab.Color = $blue
     $ws.Range("A1:C1").Merge()
     $ws.Cells.Item(1, 1).Value2 = "ExcelAI | Connection settings"
     $labels = @("Connection type", "API Key", "Base URL", "Model", "Workspace", "AutoRun", "Confirm danger", "Max steps", "Anthropic version")
@@ -118,55 +139,82 @@ try {
     $ws.Cells.Item(9, 2).Value2 = 12
     $ws.Cells.Item(10, 2).NumberFormat = "@"
     $ws.Cells.Item(10, 2).Value2 = "2023-06-01"
-    $ws.Columns.Item("A").ColumnWidth = 22; $ws.Columns.Item("B").ColumnWidth = 42; $ws.Columns.Item("C").ColumnWidth = 52
-    $ws.Range("A1:C1").Interior.Color = 3158064; $ws.Range("A1:C1").Font.Color = 16777215; $ws.Range("A1:C1").Font.Bold = $true; $ws.Range("A1:C1").Font.Size = 16
-    $ws.Range("A2:A10").Font.Bold = $true; $ws.Range("B2:B10").Interior.Color = 13431551; $ws.Range("C2:C10").Font.Color = 8421504; $ws.Range("A2:C10").Borders.LineStyle = 1
+    $ws.Columns.Item("A").ColumnWidth = 24; $ws.Columns.Item("B").ColumnWidth = 48; $ws.Columns.Item("C").ColumnWidth = 56
+    $ws.Range("A1:C1").Interior.Color = $navy; $ws.Range("A1:C1").Font.Color = $white; $ws.Range("A1:C1").Font.Bold = $true; $ws.Range("A1:C1").Font.Size = 16
+    $ws.Range("A2:A10").Interior.Color = $lightBlue; $ws.Range("A2:A10").Font.Bold = $true; $ws.Range("B2:B10").Interior.Color = $inputFill; $ws.Range("B2:B10").Font.Color = $deepNavy; $ws.Range("C2:C10").Interior.Color = $pale; $ws.Range("C2:C10").Font.Color = $muted; $ws.Range("A2:C10").Borders.LineStyle = 1
+    $ws.Rows("1:10").RowHeight = 23; $ws.Rows.Item(1).RowHeight = 30
+    $ws.Range("A12:C12").Merge(); $ws.Cells.Item(12, 1).Value2 = "Input cells are pale yellow. Test the connection after changing settings."; $ws.Range("A12:C12").Interior.Color = $pale; $ws.Range("A12:C12").Font.Color = $muted; $ws.Rows.Item(12).RowHeight = 24
     $ws.Range("B2").Validation.Add(3, 1, 1, "OpenAI,Anthropic")
     $ws.Range("B7:B8").Validation.Add(3, 1, 1, "yes,no")
 
     $ops = $wb.Worksheets.Item(3)
-    $ops.Range("A1:B1").Merge(); $ops.Cells.Item(1, 1).Value2 = "ExcelAI | Start here"
-    $ops.Cells.Item(2, 1).Value2 = "1. Enter an API key.  2. Refresh models.  3. Test connection.  4. Open agent."
-    $ops.Range("A1:B1").Interior.Color = 3158064; $ops.Range("A1:B1").Font.Color = 16777215; $ops.Range("A1:B1").Font.Bold = $true; $ops.Range("A1:B1").Font.Size = 16
-    $ops.Columns.Item("A").ColumnWidth = 28; $ops.Columns.Item("B").ColumnWidth = 72
+    $ops.Tab.Color = $teal
+    $ops.Range("A1:H1").Merge(); $ops.Cells.Item(1, 1).Value2 = "ExcelAI | Operation Center"
+    $ops.Range("A2:H2").Merge(); $ops.Cells.Item(2, 1).Value2 = "Check settings -> test connection -> enter Request -> run"
+    $ops.Range("A1:H1").Interior.Color = $navy; $ops.Range("A1:H1").Font.Color = $white; $ops.Range("A1:H1").Font.Bold = $true; $ops.Range("A1:H1").Font.Size = 18
+    $ops.Range("A2:H2").Interior.Color = $pale; $ops.Range("A2:H2").Font.Color = $muted; $ops.Range("A2:H2").Font.Size = 11
+    $ops.Columns.Item("A").ColumnWidth = 26; $ops.Columns.Item("B").ColumnWidth = 68
+    foreach ($column in @("C", "D", "E", "F", "G", "H")) { $ops.Columns.Item($column).ColumnWidth = 14 }
+    $ops.Rows("1:2").RowHeight = 24; $ops.Rows.Item(1).RowHeight = 32
     $buttonSpecs = @(
-        @("1. Refresh models", "RefreshModels"),
-        @("2. Test connection", "TestConnection"),
-        @("3. Open request panel", "ShowAgent"),
-        @("4. Run request", "RunSheetPrompt"),
-        @("Open workspace", "OpenWorkspaceFolder"),
-        @("Clear chat log", "ClearChatLog")
+        @("1. Refresh models", "RefreshModels", $blue),
+        @("2. Test connection", "TestConnection", $teal),
+        @("3. Open request panel", "ShowAgent", $navy),
+        @("4. Run request", "RunSheetPrompt", $green),
+        @("Open workspace", "OpenWorkspaceFolder", $amber),
+        @("Clear chat log", "ClearChatLog", $muted)
     )
-    $top = 60
+    $buttonIndex = 0
     foreach ($spec in $buttonSpecs) {
-        $button = $ops.Buttons().Add(20, $top, 220, 30)
+        $buttonRow = [math]::Floor($buttonIndex / 3)
+        $buttonColumn = $buttonIndex % 3
+        $button = $ops.Buttons().Add((20 + ($buttonColumn * 240)), (60 + ($buttonRow * 42)), 220, 30)
         $button.Characters().Text = $spec[0]
         $button.OnAction = $spec[1]
-        $top += 42
+        try {
+            $button.ShapeRange.Fill.ForeColor.RGB = [int]$spec[2]
+            $button.ShapeRange.Line.ForeColor.RGB = [int]$spec[2]
+            $button.Characters().Font.Color = $deepNavy
+            $button.Characters().Font.Bold = $true
+            $button.Characters().Font.Size = 11
+        }
+        catch { }
+        try { $button.Font.ColorIndex = 1; $button.Characters().Font.ColorIndex = 1; $button.Characters().Font.Bold = $true; $button.Characters().Font.Size = 11 } catch { }
+        $buttonIndex += 1
     }
-    $ops.Cells.Item(13, 1).Value2 = "Latest check"; $ops.Cells.Item(14, 1).Value2 = "Time"; $ops.Cells.Item(15, 1).Value2 = "Result"
-    $ops.Range("A13:B15").Borders.LineStyle = 1; $ops.Range("A13:A15").Font.Bold = $true
+    $ops.Range("A13:B13").Merge(); $ops.Cells.Item(13, 1).Value2 = "LATEST CHECK"
+    $ops.Cells.Item(14, 1).Value2 = "Time"; $ops.Cells.Item(15, 1).Value2 = "Result"
+    $ops.Range("A13:B13").Interior.Color = $navy; $ops.Range("A13:B13").Font.Color = $white; $ops.Range("A13:B13").Font.Bold = $true
+    $ops.Range("A14:A15").Interior.Color = $lightBlue; $ops.Range("A14:A15").Font.Bold = $true; $ops.Range("B14:B15").Interior.Color = $pale
+    $ops.Range("A13:B15").Borders.LineStyle = 1
+    $ops.Rows.Item(13).RowHeight = 24; $ops.Rows.Item(14).RowHeight = 24; $ops.Rows.Item(15).RowHeight = 54
     $ops.Cells.Item(7, 1).Value2 = "Request"
     $ops.Cells.Item(7, 2).Value2 = ""
     $ops.Cells.Item(9, 1).Value2 = "Result"
-    $ops.Range("A7:B7").Borders.LineStyle = 1; $ops.Range("A9:B9").Borders.LineStyle = 1
-    $ops.Range("A7:A9").Font.Bold = $true
-    $ops.Range("B7").Interior.Color = 13431551
-    $ops.Range("B9").WrapText = $true
-    $ops.Rows.Item(9).RowHeight = 90
+    $ops.Range("A7:A7").Interior.Color = $blue; $ops.Range("A7:A7").Font.Color = $white; $ops.Range("A7:A7").Font.Bold = $true
+    $ops.Range("A9:A10").Merge(); $ops.Range("A9:A10").Interior.Color = $blue; $ops.Range("A9:A10").Font.Color = $white; $ops.Range("A9:A10").Font.Bold = $true
+    $ops.Range("B7:H7").Merge(); $ops.Range("B9:H10").Merge()
+    $ops.Range("B7:H7").Interior.Color = $inputFill; $ops.Range("B9:H10").Interior.Color = $pale
+    $ops.Range("A7:H10").Borders.LineStyle = 1
+    $ops.Range("B7:H7").WrapText = $true; $ops.Range("B9:H10").WrapText = $true
+    $ops.Rows.Item(7).RowHeight = 30; $ops.Rows("9:10").RowHeight = 28
 
     $log = $wb.Worksheets.Item(4)
+    $log.Tab.Color = $muted
     $log.Cells.Item(1, 1).Value2 = "Time"; $log.Cells.Item(1, 2).Value2 = "Type"; $log.Cells.Item(1, 3).Value2 = "Content"
-    $log.Range("A1:C1").Interior.Color = 3158064; $log.Range("A1:C1").Font.Color = 16777215; $log.Range("A1:C1").Font.Bold = $true
-    $log.Columns.Item("A").ColumnWidth = 22; $log.Columns.Item("B").ColumnWidth = 16; $log.Columns.Item("C").ColumnWidth = 90; $log.Rows.Item(1).AutoFilter()
+    $log.Range("A1:C1").Interior.Color = $navy; $log.Range("A1:C1").Font.Color = $white; $log.Range("A1:C1").Font.Bold = $true
+    $log.Columns.Item("A").ColumnWidth = 22; $log.Columns.Item("B").ColumnWidth = 16; $log.Columns.Item("C").ColumnWidth = 96; $log.Rows.Item(1).RowHeight = 24; $log.Range("A1:C1").AutoFilter()
 
     $models = $wb.Worksheets.Item(5)
-    $models.Range("A1:B1").Merge(); $models.Cells.Item(1, 1).Value2 = "Model list"
-    $models.Cells.Item(3, 1).Value2 = "Use Settings > Refresh models to update this list."
+    $models.Tab.Color = $amber
+    $models.Range("A1:C1").Merge(); $models.Cells.Item(1, 1).Value2 = "Model catalog"
+    $models.Range("A3:C3").Merge(); $models.Cells.Item(3, 1).Value2 = "Refresh from the Settings sheet, then choose a model there."
     $models.Cells.Item(5, 1).Value2 = "Model ID"; $models.Cells.Item(5, 2).Value2 = "Connection type"
-    $models.Range("A1:B1").Interior.Color = 3158064; $models.Range("A1:B1").Font.Color = 16777215; $models.Range("A1:B1").Font.Bold = $true
-    $models.Range("A5:B5").Interior.Color = 12632256; $models.Range("A5:B5").Font.Bold = $true
-    $models.Columns.Item("A").ColumnWidth = 54; $models.Columns.Item("B").ColumnWidth = 20
+    $models.Range("A1:C1").Interior.Color = $navy; $models.Range("A1:C1").Font.Color = $white; $models.Range("A1:C1").Font.Bold = $true; $models.Range("A1:C1").Font.Size = 16
+    $models.Range("A3:C3").Interior.Color = $pale; $models.Range("A3:C3").Font.Color = $muted
+    $models.Range("A5:B5").Interior.Color = $blue; $models.Range("A5:B5").Font.Color = $white; $models.Range("A5:B5").Font.Bold = $true
+    $models.Columns.Item("A").ColumnWidth = 58; $models.Columns.Item("B").ColumnWidth = 22; $models.Columns.Item("C").ColumnWidth = 14
+    $models.Rows.Item(1).RowHeight = 30; $models.Rows.Item(3).RowHeight = 24; $models.Rows.Item(5).RowHeight = 24; $models.Range("A5:B5").AutoFilter()
     $ws.Range("B5").Validation.Add(3, 1, 1, "='" + $models.Name + "'!`$A`$6:`$A`$500")
     try {
         $modelHeaders = @{}
@@ -249,6 +297,11 @@ try {
         $mod.AddFromString($code)
     }
 
+    foreach ($sheet in $wb.Worksheets) {
+        $sheet.Activate()
+        try { $excel.ActiveWindow.DisplayGridlines = $false; $excel.ActiveWindow.Zoom = 90 } catch { }
+    }
+    $readme.Activate()
     $wb.SaveAs($xlsmPath, 52)
     Write-Host "Created: $xlsmPath"
 }
