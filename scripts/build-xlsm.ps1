@@ -29,16 +29,80 @@ try {
     }
     $wb = $excel.Workbooks.Add()
 
-    while (($wb.Worksheets.Count) -lt 4) {
+    while (($wb.Worksheets.Count) -lt 5) {
         $wb.Worksheets.Add() | Out-Null
     }
 
-    $wb.Worksheets.Item(1).Name = [char]0x8A2D + [char]0x5B9A
-    $wb.Worksheets.Item(2).Name = [char]0x64CD + [char]0x4F5C
-    $wb.Worksheets.Item(3).Name = -join @([char]0x30C1, [char]0x30E3, [char]0x30C3, [char]0x30C8, [char]0x30ED, [char]0x30B0)
-    $wb.Worksheets.Item(4).Name = -join @([char]0x30E2, [char]0x30C7, [char]0x30EB, [char]0x4E00, [char]0x89A7)
+    $wb.Worksheets.Item(1).Name = "README"
+    $wb.Worksheets.Item(2).Name = [char]0x8A2D + [char]0x5B9A
+    $wb.Worksheets.Item(3).Name = [char]0x64CD + [char]0x4F5C
+    $wb.Worksheets.Item(4).Name = -join @([char]0x30C1, [char]0x30E3, [char]0x30C3, [char]0x30C8, [char]0x30ED, [char]0x30B0)
+    $wb.Worksheets.Item(5).Name = -join @([char]0x30E2, [char]0x30C7, [char]0x30EB, [char]0x4E00, [char]0x89A7)
 
-    $ws = $wb.Worksheets.Item(1)
+    $readme = $wb.Worksheets.Item(1)
+    $readme.Tab.Color = 5296274
+    $readme.Range("A1:H1").Merge()
+    $readme.Cells.Item(1, 1).Value2 = "ExcelAI | README"
+    $readme.Range("A1:H1").Interior.Color = 3158064
+    $readme.Range("A1:H1").Font.Color = 16777215
+    $readme.Range("A1:H1").Font.Bold = $true
+    $readme.Range("A1:H1").Font.Size = 18
+    $readme.Range("A2:H2").Merge()
+    $readme.Cells.Item(2, 1).Value2 = "Start here: set your provider, test the connection, then run a request."
+    $readme.Range("A2:H2").Font.Color = 8421504
+    $readme.Range("A2:H2").Font.Size = 11
+    $readme.Columns.Item("A").ColumnWidth = 18
+    $readme.Columns.Item("B").ColumnWidth = 24
+    foreach ($column in @("C", "D", "E", "F", "G", "H")) { $readme.Columns.Item($column).ColumnWidth = 16 }
+    $readme.Range("A1:H60").VerticalAlignment = -4160
+    $readme.Range("A1:H60").WrapText = $true
+    $readmeLinesPath = Join-Path $root "docs\README_SHEET.txt"
+    if (-not (Test-Path $readmeLinesPath)) { throw "README sheet content was not found: $readmeLinesPath" }
+    $readmeRow = 4
+    foreach ($line in ((Get-Content $readmeLinesPath -Raw -Encoding UTF8) -split "`r?`n")) {
+        if ([string]::IsNullOrWhiteSpace($line)) { $readmeRow += 1; continue }
+        $parts = $line.Split('|')
+        switch ($parts[0]) {
+            "SECTION" {
+                $readme.Range("A${readmeRow}:H${readmeRow}").Merge()
+                $readme.Cells.Item($readmeRow, 1).Value2 = $parts[1]
+                $readme.Range("A${readmeRow}:H${readmeRow}").Interior.Color = 12632256
+                $readme.Range("A${readmeRow}:H${readmeRow}").Font.Bold = $true
+                $readme.Rows.Item($readmeRow).RowHeight = 24
+                $readmeRow += 1
+            }
+            "STEP" {
+                $readme.Cells.Item($readmeRow, 1).Value2 = "STEP " + $parts[1]
+                $readme.Cells.Item($readmeRow, 2).Value2 = $parts[2]
+                $readme.Range("C${readmeRow}:H${readmeRow}").Merge()
+                $readme.Cells.Item($readmeRow, 3).Value2 = $parts[3]
+                $readme.Range("A${readmeRow}:B${readmeRow}").Font.Bold = $true
+                $readme.Rows.Item($readmeRow).RowHeight = 38
+                $readmeRow += 1
+            }
+            "ITEM" {
+                $readme.Cells.Item($readmeRow, 1).Value2 = $parts[1]
+                $readme.Cells.Item($readmeRow, 2).Value2 = $parts[2]
+                $readme.Range("C${readmeRow}:H${readmeRow}").Merge()
+                $readme.Cells.Item($readmeRow, 3).Value2 = $parts[3]
+                $readme.Cells.Item($readmeRow, 1).Font.Bold = $true
+                $readme.Rows.Item($readmeRow).RowHeight = 38
+                $readmeRow += 1
+            }
+            "NOTE" {
+                $readme.Range("A${readmeRow}:H${readmeRow}").Merge()
+                $readme.Cells.Item($readmeRow, 1).Value2 = $parts[1]
+                $readme.Range("A${readmeRow}:H${readmeRow}").Font.Color = 8421504
+                $readme.Rows.Item($readmeRow).RowHeight = 30
+                $readmeRow += 1
+            }
+        }
+    }
+    $readme.Range("A4:H$($readmeRow - 1)").Borders.LineStyle = 1
+    $readme.Rows.Item(1).RowHeight = 30
+    $readme.Rows.Item(2).RowHeight = 24
+
+    $ws = $wb.Worksheets.Item(2)
     $ws.Range("A1:C1").Merge()
     $ws.Cells.Item(1, 1).Value2 = "ExcelAI | Connection settings"
     $labels = @("Connection type", "API Key", "Base URL", "Model", "Workspace", "AutoRun", "Confirm danger", "Max steps", "Anthropic version")
@@ -60,7 +124,7 @@ try {
     $ws.Range("B2").Validation.Add(3, 1, 1, "OpenAI,Anthropic")
     $ws.Range("B7:B8").Validation.Add(3, 1, 1, "yes,no")
 
-    $ops = $wb.Worksheets.Item(2)
+    $ops = $wb.Worksheets.Item(3)
     $ops.Range("A1:B1").Merge(); $ops.Cells.Item(1, 1).Value2 = "ExcelAI | Start here"
     $ops.Cells.Item(2, 1).Value2 = "1. Enter an API key.  2. Refresh models.  3. Test connection.  4. Open agent."
     $ops.Range("A1:B1").Interior.Color = 3158064; $ops.Range("A1:B1").Font.Color = 16777215; $ops.Range("A1:B1").Font.Bold = $true; $ops.Range("A1:B1").Font.Size = 16
@@ -91,12 +155,12 @@ try {
     $ops.Range("B9").WrapText = $true
     $ops.Rows.Item(9).RowHeight = 90
 
-    $log = $wb.Worksheets.Item(3)
+    $log = $wb.Worksheets.Item(4)
     $log.Cells.Item(1, 1).Value2 = "Time"; $log.Cells.Item(1, 2).Value2 = "Type"; $log.Cells.Item(1, 3).Value2 = "Content"
     $log.Range("A1:C1").Interior.Color = 3158064; $log.Range("A1:C1").Font.Color = 16777215; $log.Range("A1:C1").Font.Bold = $true
     $log.Columns.Item("A").ColumnWidth = 22; $log.Columns.Item("B").ColumnWidth = 16; $log.Columns.Item("C").ColumnWidth = 90; $log.Rows.Item(1).AutoFilter()
 
-    $models = $wb.Worksheets.Item(4)
+    $models = $wb.Worksheets.Item(5)
     $models.Range("A1:B1").Merge(); $models.Cells.Item(1, 1).Value2 = "Model list"
     $models.Cells.Item(3, 1).Value2 = "Use Settings > Refresh models to update this list."
     $models.Cells.Item(5, 1).Value2 = "Model ID"; $models.Cells.Item(5, 2).Value2 = "Connection type"
