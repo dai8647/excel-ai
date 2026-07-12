@@ -133,7 +133,7 @@ try {
     $ws.Cells.Item(3, 2).NumberFormat = "@"
     $ws.Cells.Item(3, 2).Value2 = $routerKey
     $ws.Cells.Item(4, 2).Value2 = "http://127.0.0.1:20128/v1"
-    $ws.Cells.Item(6, 2).Value2 = (Join-Path $root "workspace")
+    $ws.Cells.Item(6, 2).Value2 = "workspace"
     $ws.Cells.Item(7, 2).Value2 = "no"
     $ws.Cells.Item(8, 2).Value2 = "yes"
     $ws.Cells.Item(9, 2).Value2 = 12

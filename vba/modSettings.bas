@@ -59,9 +59,14 @@ Public Function GetModel() As String
 End Function
 
 Public Function GetWorkspacePath() As String
+    Dim fso As Object
     Dim p As String
+    Set fso = CreateObject("Scripting.FileSystemObject")
     p = GetSettingValue(ROW_WORKSPACE)
-    If Len(p) = 0 Then p = ThisWorkbook.Path & "\workspace"
+    If Len(p) = 0 Then p = "workspace"
+    If Not ((Len(p) >= 2 And Mid$(p, 2, 1) = ":") Or Left$(p, 2) = "\\") Then
+        p = fso.BuildPath(ThisWorkbook.Path, p)
+    End If
     GetWorkspacePath = NormalizePath(p)
 End Function
 
@@ -117,7 +122,7 @@ End Sub
 Public Sub InitDefaultSettings()
     If Len(GetSettingValue(ROW_PROVIDER)) = 0 Then SetSettingValue ROW_PROVIDER, "OpenAI"
     If Len(GetSettingValue(ROW_BASE_URL)) = 0 Then SetSettingValue ROW_BASE_URL, "http://127.0.0.1:20128/v1"
-    If Len(GetSettingValue(ROW_WORKSPACE)) = 0 Then SetSettingValue ROW_WORKSPACE, ThisWorkbook.Path & "\workspace"
+    If Len(GetSettingValue(ROW_WORKSPACE)) = 0 Then SetSettingValue ROW_WORKSPACE, "workspace"
     If Len(GetSettingValue(ROW_AUTO_RUN)) = 0 Then SetSettingValue ROW_AUTO_RUN, "いいえ"
     If Len(GetSettingValue(ROW_CONFIRM_DANGER)) = 0 Then SetSettingValue ROW_CONFIRM_DANGER, "はい"
     If Len(GetSettingValue(ROW_MAX_STEPS)) = 0 Then SetSettingValue ROW_MAX_STEPS, "12"

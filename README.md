@@ -33,7 +33,7 @@ OpenClaude の「ツールループ + プロバイダ切替 + サンドボック
 ## デフォルト作業場所
 
 ```
-C:\Users\dai86\Downloads\エクセルAI\workspace
+workspace
 ```
 
 設定シート B6 に同じパスを入れてください。
