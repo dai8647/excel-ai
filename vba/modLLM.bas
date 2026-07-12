@@ -10,7 +10,7 @@ Public Function LLM_TestConnection() As String
     On Error GoTo ErrHandler
 
     If IsAnthropicProvider() Then
-        body = "{""model"":" & JsonString(GetModel()) & ",""max_tokens"":5,""messages"":[{""role"":""user"",""content"":""ping""}]}"
+        body = "{""model"":" & JsonString(GetModel()) & ",""max_tokens"":5,""stream"":false" & AnthropicThinkingOption() & ",""messages"":[{""role"":""user"",""content"":""ping""}]}"
         resp = HttpPostJson(AnthropicApiRoot() & "/messages", body, True)
     Else
         body = "{""model"":" & JsonString(GetModel()) & ",""messages"":[{""role"":""user"",""content"":""ping""}],""max_tokens"":5}"
@@ -163,7 +163,15 @@ Private Function BuildAnthropicRequest(ByVal history As Collection) As String
             parts = AddJsonPart(parts, "{""role"":""user"",""content"":" & JsonString(content) & "}")
         End If
     Next i
-    BuildAnthropicRequest = "{""model"":" & JsonString(GetModel()) & ",""max_tokens"":1024,""system"":" & JsonString(systemText) & ",""messages"": [" & parts & "],""tools"":" & Tools_GetAnthropicDefinitionsJson() & "}"
+    BuildAnthropicRequest = "{""model"":" & JsonString(GetModel()) & ",""max_tokens"":2048,""stream"":false" & AnthropicThinkingOption() & ",""system"":" & JsonString(systemText) & ",""messages"": [" & parts & "],""tools"":" & Tools_GetAnthropicDefinitionsJson() & "}"
+End Function
+
+Private Function AnthropicThinkingOption() As String
+    Dim root As String
+    root = LCase$(GetBaseUrl())
+    If InStr(1, root, "127.0.0.1:20128", vbTextCompare) > 0 Or InStr(1, root, "localhost:20128", vbTextCompare) > 0 Then
+        AnthropicThinkingOption = ",""thinking"":{""type"":""disabled""}"
+    End If
 End Function
 
 Private Function NormalizeAnthropicResponse(ByVal responseJson As String) As String
@@ -172,7 +180,9 @@ Private Function NormalizeAnthropicResponse(ByVal responseJson As String) As Str
     pos = InStr(1, responseJson, """tool_use""", vbTextCompare)
     Do While pos > 0
         blockStart = InStrRev(responseJson, "{", pos)
+        If blockStart = 0 Then Exit Do
         blockEnd = JsonFindClosingDelimiter(responseJson, blockStart, "{", "}")
+        If blockEnd <= pos Or blockEnd <= blockStart Then Exit Do
         block = Mid$(responseJson, blockStart, blockEnd - blockStart + 1)
         id = JsonExtractString(block, "id")
         name = JsonExtractString(block, "name")

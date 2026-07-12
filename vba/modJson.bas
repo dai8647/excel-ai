@@ -43,11 +43,14 @@ Public Function JsonExtractString(ByVal json As String, ByVal key As String) As 
     Dim buf As String
 
     keyPos = InStr(1, json, """" & key & """", vbTextCompare)
+    Do While keyPos > 0
+        i = keyPos + Len(key) + 2
+        JsonSkipWhitespace json, i
+        If i <= Len(json) And Mid$(json, i, 1) = ":" Then Exit Do
+        keyPos = InStr(keyPos + 1, json, """" & key & """", vbTextCompare)
+    Loop
     If keyPos = 0 Then Exit Function
 
-    i = keyPos + Len(key) + 2
-    JsonSkipWhitespace json, i
-    If i > Len(json) Or Mid$(json, i, 1) <> ":" Then Exit Function
     i = i + 1
     JsonSkipWhitespace json, i
     If i > Len(json) Or Mid$(json, i, 1) <> """" Then Exit Function
@@ -62,6 +65,20 @@ Public Function JsonExtractString(ByVal json As String, ByVal key As String) As 
                 Case "t": buf = buf & vbTab
                 Case """": buf = buf & """"
                 Case "\": buf = buf & "\"
+                Case "u"
+                    If i + 4 <= Len(json) Then
+                        On Error Resume Next
+                        buf = buf & ChrW$(CLng("&H" & Mid$(json, i + 1, 4)))
+                        If Err.Number <> 0 Then
+                            Err.Clear
+                            buf = buf & "u"
+                        Else
+                            i = i + 4
+                        End If
+                        On Error GoTo 0
+                    Else
+                        buf = buf & "u"
+                    End If
                 Case Else: buf = buf & ch
             End Select
             escaped = False
