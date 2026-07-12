@@ -127,7 +127,7 @@ try {
     $ws.Range("A1:C1").Merge()
     $ws.Cells.Item(1, 1).Value2 = "ExcelAI | Connection settings"
     $labels = @("Connection type", "API Key", "Base URL", "Model", "Workspace", "AutoRun", "Confirm danger", "Max steps", "Anthropic version")
-    $hints = @("OpenAI or Anthropic", "Enter your 9router or provider key", "OpenAI includes /v1. Anthropic does not.", "Refresh models, then select one", "AI actions stay inside this folder", "No is recommended", "Yes is recommended", "12 is a safe start", "Native Anthropic API version")
+    $hints = @("OpenAI or Anthropic", "Enter the selected provider's API key; never share it", "OpenAI includes /v1. Anthropic does not.", "Refresh models, then select one", "Enter this PC's folder path; workspace is the portable default", "No is recommended", "Yes is recommended", "12 is a safe start", "Native Anthropic API version")
     for ($i = 0; $i -lt $labels.Count; $i++) { $ws.Cells.Item($i + 2, 1).Value2 = $labels[$i]; $ws.Cells.Item($i + 2, 3).Value2 = $hints[$i] }
     $ws.Cells.Item(2, 2).Value2 = "OpenAI"
     $ws.Cells.Item(3, 2).NumberFormat = "@"
@@ -161,6 +161,7 @@ try {
         @("2. Test connection", "TestConnection", $teal),
         @("3. Open request panel", "ShowAgent", $navy),
         @("4. Run request", "RunSheetPrompt", $green),
+        @("Choose workspace", "PickWorkspaceFolder", $amber),
         @("Open workspace", "OpenWorkspaceFolder", $amber),
         @("Clear chat log", "ClearChatLog", $muted),
         @("Workspace safety", "WorkspaceSafetyCheck", $teal)

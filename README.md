@@ -37,3 +37,5 @@ workspace
 ```
 
 設定シート B6 に同じパスを入れてください。
+
+Per-PC setup: enter each user's local folder path in `設定!B6`. An absolute path is supported; `workspace` means a folder beside the workbook.

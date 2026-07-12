@@ -135,6 +135,19 @@ Public Sub OpenWorkspaceFolder()
     Shell "explorer.exe """ & GetWorkspacePath() & """", vbNormalFocus
 End Sub
 
+Public Sub PickWorkspaceFolder()
+    Dim picker As Object
+    Set picker = Application.FileDialog(4)
+    picker.Title = "Choose the ExcelAI workspace folder"
+    picker.AllowMultiSelect = False
+    If picker.Show <> -1 Then Exit Sub
+    If picker.SelectedItems.Count = 0 Then Exit Sub
+
+    SetSettingValue ROW_WORKSPACE, CStr(picker.SelectedItems(1))
+    Ops_WriteStatus "Workspace updated: " & GetWorkspacePath(), False
+    MsgBox "Workspace updated:" & vbCrLf & GetWorkspacePath(), vbInformation, "ExcelAI"
+End Sub
+
 Public Sub TestConnection()
     On Error GoTo ErrHandler
     Dim result As String

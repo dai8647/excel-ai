@@ -6,8 +6,8 @@ STEP|4|AIに依頼|操作シートのRequest欄に依頼を書き、「4. Run re
 
 SECTION|設定シート
 ITEM|設定!B2|Connection type|OpenAI または Anthropic を選びます。9routerはOpenAI互換とAnthropic互換の両方に対応します。
-ITEM|設定!B3|API Key|9routerの有効なキーを入力します。キーはこのブックの外へ送信・公開しないでください。
-ITEM|設定!B4|Base URL|9routerは http://127.0.0.1:20128/v1。OpenAI互換は /v1 を含め、Anthropic互換は自動調整します。
+ITEM|設定!B3|API Key|選択したプロバイダーのAPIキーを入力します。キーはこのブックの外へ送信・公開しないでください。
+ITEM|設定!B4|Base URL|接続先のベースURLを入力します。OpenAI互換は通常 /v1 を含め、Anthropic互換は互換仕様に合わせます。9routerは http://127.0.0.1:20128/v1 です。
 ITEM|設定!B5|Model|モデル一覧から使うモデルIDを選びます。最初は軽量モデルで接続確認するのがおすすめです。
 ITEM|設定!B6|Workspace|AIが読み書きできる作業フォルダーです。安全のため、このフォルダー内だけを対象にします。
 ITEM|設定!B7|AutoRun|noを推奨します。書き込み・移動・削除などの操作は確認を挟みます。
