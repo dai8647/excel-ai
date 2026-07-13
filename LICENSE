@@ -1,0 +1,70 @@
+ExcelAI Community & Commercial Use License (EACUL) v1.0
+
+Copyright (c) 2026 dai8647
+
+IMPORTANT: This is a source-available license and is not an OSI-approved
+open-source license. Replace the copyright holder above with the legal name
+of the rights holder before signing commercial agreements.
+
+1. Definitions
+
+"Software" means the source code, VBA modules, documentation, scripts, and
+other materials in this repository.
+
+"Personal Use" means use by an individual for personal, hobby, educational,
+or non-profit research purposes, without using the Software on behalf of a
+company or other organization and without using it to provide paid services.
+
+"Commercial Use" means any use by or for a company, organization, or other
+legal entity; use in internal business operations; use to provide paid or
+revenue-generating services; resale, sublicensing, or commercial distribution;
+or bundling the Software into a commercial product or service.
+
+2. Free Personal-Use Grant
+
+Subject to this License, the rights holder grants you a worldwide,
+non-exclusive, royalty-free license to use, copy, modify, and distribute the
+Software and modifications solely for Personal Use.
+
+You must retain this License and all copyright notices in copies or
+substantial portions of the Software. This grant does not grant any trademark,
+logo, patent, or other rights beyond the copyright rights expressly stated.
+
+3. Commercial Use Requires a Separate License
+
+This License does not grant Commercial Use. Before any Commercial Use, you
+must obtain a written commercial license from the rights holder. Commercial
+license fees, permitted users, deployment scope, support, updates, and other
+terms are determined by a separate written agreement, order form, or quote.
+
+No commercial license is implied by the public availability of this
+repository, a GitHub fork, or a contribution to the Software.
+
+4. Contributions
+
+Unless a separate written agreement says otherwise, a contribution submitted
+to this repository is provided under this License and may be included in both
+the community and commercial versions of the Software.
+
+5. Third-Party Materials
+
+Third-party code, libraries, APIs, trademarks, and service terms remain
+subject to their own licenses and terms. This License does not grant rights to
+Microsoft, Excel, OpenAI, Anthropic, OpenCode, 9router, or any other
+third-party brand or service.
+
+6. Disclaimer and Limitation of Liability
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EXPRESS OR IMPLIED. TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE RIGHTS
+HOLDER WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+OR CONSEQUENTIAL DAMAGES ARISING FROM USE OF THE SOFTWARE.
+
+7. Termination
+
+Your rights under this License terminate automatically if you materially
+violate its terms. Rights may be reinstated if the violation is cured within
+30 days after written notice, where cure is possible.
+
+For commercial licensing, see COMMERCIAL_LICENSE.md. This draft should be
+reviewed by a qualified lawyer before commercial distribution.

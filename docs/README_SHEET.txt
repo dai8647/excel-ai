@@ -36,6 +36,11 @@ ITEM|Workspace限定|ファイル操作はWorkspace内だけに制限されま�
 ITEM|確認|AutoRun=no、Confirm danger=yesの組み合わせを推奨します。
 ITEM|APIキー|キーをGitHubやチャットログへ貼り付けないでください。公開リポジトリには含めません。
 
+SECTION|利用条件
+ITEM|個人利用|個人・教育・非営利の利用はLICENSEの範囲で無償です。
+ITEM|商用利用|会社・法人・団体の社内業務、顧客向け業務、有償サービスへの組み込み、商用配布は商用ライセンス契約が必要です。
+ITEM|非提携|ExcelAIはMicrosoftの公式製品・公式アドインではありません。
+
 SECTION|困ったとき
 ITEM|接続エラー|9routerが起動しているか、Base URLが http://127.0.0.1:20128/v1 か、APIキーが有効か確認します。
 ITEM|モデルがない|設定シートの「Refresh models」を実行し、モデル一覧からモデルIDを選び直します。
