@@ -16,22 +16,26 @@
 
 1. `ExcelAI.xlsm` を任意の場所に配置（共有フォルダ可）
 2. Excel で開く → 「コンテンツの有効化」をクリック
-3. `設定` シートで各項目を入力（下表参照）
-4. `操作` シートの「接続テスト」ボタンで API 疎通確認
-5. `操作` シートの「エージェントを開く」でチャット UI を起動
+3. `設定` シートでプロバイダー、APIキー、Base URL、モデル、Workspaceを入力（下表参照）
+4. `操作` シートの「モデル一覧を更新」で接続先のモデルを取得
+5. `操作` シートの「接続テスト」ボタンで API 疎通確認
+6. `操作` シートの「エージェントを開く」でチャット UI を起動
 
 ## 設定シート（B列）
 
 | 行 | 項目 | 例 |
 |----|------|-----|
-| 2 | API Key | `sk-...`（ローカル LLM なら空欄可） |
-| 3 | Base URL | `https://api.openai.com/v1` |
-| 4 | Model | `gpt-4o-mini` |
-| 5 | ローカル LLM パス | `C:\Users\xxx\AppData\Local\LM Studio` |
-| 6 | 作業場所 | `C:\Users\xxx\Downloads\エクセルAI\workspace` |
-| 7 | 自動実行 | `はい` または `いいえ` |
-| 8 | 危険操作の確認 | `はい` または `いいえ` |
-| 9 | 最大ステップ数 | `20` |
+| 2 | Connection type | `OpenAI` または `Anthropic` |
+| 3 | API Key | 選択した接続方式のキー（ローカル LLM なら空欄可） |
+| 4 | Base URL | `https://api.openai.com/v1` または `https://api.anthropic.com` |
+| 5 | Model | 「モデル一覧を更新」で取得したモデルID |
+| 6 | Workspace | このPCの作業フォルダ。`workspace` はブックと同じ場所 |
+| 7 | AutoRun | `はい` または `いいえ`（初期値は `いいえ`） |
+| 8 | Confirm danger | `はい` または `いいえ`（初期値は `はい`） |
+| 9 | Max steps | `12` など。1回の依頼で許可する最大ステップ数 |
+| 10 | Anthropic version | Anthropic互換APIのバージョン（通常 `2023-06-01`） |
+
+WorkspaceはPCごとに異なるため、配布先では各ユーザーが `設定!B6` に自分のフォルダを入力してください。絶対パスも使えます。APIキーはこのブックの外へ送信・公開しないでください。
 
 ### プロバイダ例
 
@@ -40,6 +44,21 @@
 Base URL: https://api.openai.com/v1
 Model:    gpt-4o-mini
 API Key:  （取得したキー）
+```
+
+**Anthropic 互換**
+```
+Base URL: https://api.anthropic.com
+Model:    （モデル一覧から選択）
+API Key:  （取得したキー）
+Anthropic version: 2023-06-01
+```
+
+**9router（ローカル互換ゲートウェイの例）**
+```
+Base URL: http://127.0.0.1:20128/v1
+Model:    （モデル一覧から選択）
+API Key:  9routerで発行したキー
 ```
 
 **ローカル LLM（LM Studio — Ollama 不要）**
@@ -65,15 +84,15 @@ API Key:  （取得したキー）
 3. `ファイル` → `ファイルのインポート` で `vba/` 内の `.bas` をすべてインポート
 4. `frmAgent.frm` をインポート
 5. `ThisWorkbook` に `vba/ThisWorkbook.cls` のコードを貼り付け
-6. シート `設定` `操作` `チャットログ` を作成（`docs/sheets.md` 参照）
+6. シート `設定` `操作` `モデル一覧` `チャットログ` `README` を作成（`docs/sheets.md` 参照）
 7. `操作` シートにボタンを配置してマクロを割り当て
 
 ## チーム配布時の注意
 
 - **マクロ署名**: 社内 CA で `.xlsm` に署名すると「信頼できる発行元」として配布しやすい
 - **信頼できる場所**: ネットワーク共有ではなく、各 PC のローカルまたは社内信頼フォルダへ
-- **API Key**: 共有シートに書かず、各自の設定シート B2 に入力させる
-- **作業場所**: チーム共通なら `\\server\share\ExcelAI-workspace\ユーザー名` 形式を推奨
+- **API Key**: 共有シートに書かず、各自の設定シート B3 に入力させる
+- **作業場所**: 各自の設定シート B6 に入力。チーム共通なら `\\server\share\ExcelAI-workspace\ユーザー名` 形式を推奨
 - **バージョン管理**: `設定!A1` にバージョン番号を記載（更新時の確認用）
 
 ## セキュリティ
@@ -88,6 +107,6 @@ API Key:  （取得したキー）
 | 症状 | 対処 |
 |------|------|
 | マクロが動かない | ファイルを信頼できる場所に移動、マクロを有効化 |
-| API 接続エラー | Base URL 末尾に `/v1` があるか、Local Server が起動中か確認 |
+| API 接続エラー | Connection type と Base URL の組み合わせ、キー、対象モデル、ローカルサーバーの起動状態を確認 |
 | ローカル LLM が遅い | 小さいモデルに変更、maxSteps を下げる |
 | パス拒否エラー | 作業場所配下のパスだけ指定（`..` 不可） |
