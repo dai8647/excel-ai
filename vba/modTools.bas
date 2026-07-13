@@ -331,6 +331,7 @@ Private Function Tool_CreateExcel(ByVal path As String, ByVal sheetName As Strin
     Dim lines() As String
     Dim cells() As String
     Dim r As Long, c As Long
+    Dim lastRow As Long, lastCol As Long
     Dim i As Long
 
     safePath = ResolveSafePath(path)
@@ -356,10 +357,29 @@ Private Function Tool_CreateExcel(ByVal path As String, ByVal sheetName As Strin
             cells = Split(line, ",")
             For c = LBound(cells) To UBound(cells)
                 ws.Cells(r, c + 1).Value = cells(c)
+                If c + 1 > lastCol Then lastCol = c + 1
             Next c
             r = r + 1
         End If
     Next i
+
+    lastRow = r - 1
+    If lastRow > 0 And lastCol > 0 Then
+        With ws.Range(ws.Cells(1, 1), ws.Cells(1, lastCol))
+            .Font.Bold = True
+            .Font.Color = RGB(255, 255, 255)
+            .Interior.Color = RGB(31, 78, 121)
+            .RowHeight = 24
+        End With
+        With ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol))
+            .Borders.LineStyle = 1
+            .VerticalAlignment = -4108
+            .Columns.AutoFit
+        End With
+        For c = 1 To lastCol
+            If ws.Columns(c).ColumnWidth > 32 Then ws.Columns(c).ColumnWidth = 32
+        Next c
+    End If
 
     wb.SaveAs safePath
     wb.Close False
