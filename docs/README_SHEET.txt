@@ -31,10 +31,15 @@ SECTION|AIが使えるExcel生成ツール
 ITEM|create_excel|CSV形式のデータから、数式・見出し・罫線・列幅を含むExcelファイルを作成します。
 ITEM|create_chart|既存のExcelファイルに、縦棒・横棒・折れ線・円グラフを追加します。
 
+SECTION|AIが使えるWeb調査ツール
+ITEM|web_fetch|公開されたhttp/https URLをGETし、HTML・JSON・テキストを最大50000文字まで参照します。実行前に確認を表示します。
+ITEM|web_fetchの制限|ローカル・プライベートIP、認証情報付きURL、リダイレクトは拒否します。取得内容は外部の未信頼データとして扱います。
+
 SECTION|安全ルール
 ITEM|Workspace限定|ファイル操作はWorkspace内だけに制限されます。親フォルダー参照（..）は拒否します。
 ITEM|確認|AutoRun=no、Confirm danger=yesの組み合わせを推奨します。
 ITEM|APIキー|キーをGitHubやチャットログへ貼り付けないでください。公開リポジトリには含めません。
+ITEM|Web取得|URLは外部へ送信されます。APIキー、個人情報、ブック内容をURLやクエリに含めないでください。
 
 SECTION|利用条件
 ITEM|個人利用|個人・教育・非営利の利用はLICENSEの範囲で無償です。

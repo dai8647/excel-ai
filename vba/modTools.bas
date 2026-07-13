@@ -12,7 +12,8 @@ Public Function Tools_GetDefinitionsJson() As String
         ToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string"",""description"":""e.g. data\\*.csv""},""output_path"":{""type"":""string""}}") & "," & _
         ToolDef("create_excel", "Create a new Excel workbook from CSV-like data", "{""path"":{""type"":""string"",""description"":""Output .xlsx path""},""sheet_name"":{""type"":""string""},""csv_content"":{""type"":""string"",""description"":""Comma-separated rows, newline-separated lines""}}") & "," & _
         ToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string"",""description"":""Existing .xlsx or .xlsm path""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string"",""description"":""Source range such as A1:D4""},""chart_type"":{""type"":""string"",""description"":""column, bar, line, or pie""},""title"":{""type"":""string""}}") & "," & _
-        ToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & _
+        ToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "," & _
+        ToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & _
         "]"
 End Function
 
@@ -27,7 +28,8 @@ Public Function Tools_GetAnthropicDefinitionsJson() As String
         AnthropicToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string""},""output_path"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("create_excel", "Create a new Excel workbook from CSV-like data", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""csv_content"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string""},""chart_type"":{""type"":""string""},""title"":{""type"":""string""}}") & "," & _
-        AnthropicToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "]"
+        AnthropicToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & "]"
 End Function
 
 Private Function ToolDef(ByVal name As String, ByVal description As String, ByVal params As String) As String
@@ -113,6 +115,19 @@ Public Function Tools_Execute(ByVal toolName As String, ByVal argsJson As String
             Tools_Execute = Tool_CreateChart(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "source_range"), JsonGetArg(argsJson, "chart_type"), JsonGetArg(argsJson, "title"))
         Case "grep_files"
             Tools_Execute = Tool_GrepFiles(JsonGetArg(argsJson, "folder"), JsonGetArg(argsJson, "pattern"))
+        Case "web_fetch"
+            If IsConfirmDangerEnabled() Then
+                If Not ConfirmToolAction("web_fetch", argsJson) Then
+                    Tools_Execute = "ユーザーがWeb取得をキャンセルしました"
+                    Exit Function
+                End If
+            ElseIf Not autoApproved And Not IsAutoRunEnabled() Then
+                If Not ConfirmToolAction("web_fetch", argsJson) Then
+                    Tools_Execute = "ユーザーがWeb取得をキャンセルしました"
+                    Exit Function
+                End If
+            End If
+            Tools_Execute = Tool_WebFetch(JsonGetArg(argsJson, "url"), JsonGetArg(argsJson, "max_chars"))
         Case Else
             Tools_Execute = "未知のツール: " & toolName
     End Select
@@ -488,4 +503,138 @@ Private Function Tool_GrepFiles(ByVal folder As String, ByVal pattern As String)
 
     If Len(result) = 0 Then result = "一致なし"
     Tool_GrepFiles = result
+End Function
+
+Private Function Tool_WebFetch(ByVal url As String, ByVal maxCharsText As String) As String
+    Const FETCH_TIMEOUT_MS As Long = 15000
+    Const MAX_RESPONSE_BYTES As Long = 500000
+    Const DEFAULT_MAX_CHARS As Long = 20000
+    Const ABSOLUTE_MAX_CHARS As Long = 50000
+    Dim http As Object
+    Dim contentType As String
+    Dim body As String
+    Dim maxChars As Long
+    Dim contentLength As String
+
+    url = Trim$(url)
+    ValidateWebFetchUrl url
+
+    maxChars = Val(maxCharsText)
+    If maxChars <= 0 Then maxChars = DEFAULT_MAX_CHARS
+    If maxChars < 1000 Then maxChars = 1000
+    If maxChars > ABSOLUTE_MAX_CHARS Then maxChars = ABSOLUTE_MAX_CHARS
+
+    Set http = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+    http.Open "GET", url, False
+    http.SetTimeouts FETCH_TIMEOUT_MS, FETCH_TIMEOUT_MS, FETCH_TIMEOUT_MS, FETCH_TIMEOUT_MS
+    On Error Resume Next
+    http.setOption 5, MAX_RESPONSE_BYTES
+    http.setOption 6, False
+    On Error GoTo 0
+    http.SetRequestHeader "Accept", "text/html, application/xhtml+xml, application/json, text/plain, text/*;q=0.8, */*;q=0.1"
+    http.SetRequestHeader "User-Agent", "ExcelAI/" & APP_VERSION & " (web_fetch)"
+    http.SetRequestHeader "Connection", "close"
+    http.Send
+
+    If http.Status >= 300 Then
+        Err.Raise vbObjectError + 2201, "web_fetch", "HTTP " & http.Status & " のため取得できません"
+    End If
+
+    contentType = http.GetResponseHeader("Content-Type")
+    contentLength = http.GetResponseHeader("Content-Length")
+    If Val(contentLength) > MAX_RESPONSE_BYTES Then
+        Err.Raise vbObjectError + 2202, "web_fetch", "応答が大きすぎます (500KB上限)"
+    End If
+
+    body = WebFetchToText(http.ResponseText, contentType)
+    If Len(body) > maxChars Then body = Left$(body, maxChars) & vbCrLf & "[省略: max_chars=" & maxChars & "]"
+    Tool_WebFetch = "URL: " & url & vbCrLf & _
+        "HTTP: " & http.Status & vbCrLf & _
+        "Content-Type: " & contentType & vbCrLf & vbCrLf & body
+End Function
+
+Private Sub ValidateWebFetchUrl(ByVal url As String)
+    Dim schemePos As Long
+    Dim authorityStart As Long
+    Dim authorityEnd As Long
+    Dim authority As String
+    Dim host As String
+
+    If Len(url) = 0 Or Len(url) > 2048 Then Err.Raise vbObjectError + 2203, "web_fetch", "URLが空か長すぎます"
+    If InStr(1, url, vbCr, vbBinaryCompare) > 0 Or InStr(1, url, vbLf, vbBinaryCompare) > 0 Or InStr(1, url, " ", vbBinaryCompare) > 0 Then
+        Err.Raise vbObjectError + 2204, "web_fetch", "URLに空白または改行は使えません"
+    End If
+
+    schemePos = InStr(1, url, "://", vbTextCompare)
+    If schemePos <= 1 Then Err.Raise vbObjectError + 2205, "web_fetch", "http:// または https:// のURLを指定してください"
+    If LCase$(Left$(url, schemePos - 1)) <> "http" And LCase$(Left$(url, schemePos - 1)) <> "https" Then
+        Err.Raise vbObjectError + 2206, "web_fetch", "許可されている方式は http/https だけです"
+    End If
+
+    authorityStart = schemePos + 3
+    authorityEnd = UrlAuthorityEnd(url, authorityStart)
+    If authorityEnd = 0 Then authorityEnd = Len(url) + 1
+    authority = Mid$(url, authorityStart, authorityEnd - authorityStart)
+    If Len(authority) = 0 Or InStr(1, authority, "@", vbBinaryCompare) > 0 Then
+        Err.Raise vbObjectError + 2207, "web_fetch", "ホスト名またはユーザー情報が不正です"
+    End If
+
+    host = authority
+    If Left$(host, 1) = "[" Then
+        If InStr(host, "]") > 0 Then host = Mid$(host, 2, InStr(host, "]") - 2)
+    ElseIf InStr(host, ":") > 0 Then
+        host = Left$(host, InStr(host, ":") - 1)
+    End If
+    host = LCase$(Trim$(host))
+    If Len(host) = 0 Or host = "localhost" Or host = "::1" Or host = "0.0.0.0" Or host = "127.0.0.1" Or host = "169.254.169.254" Or Right$(host, 6) = ".local" Then
+        Err.Raise vbObjectError + 2208, "web_fetch", "ローカル・リンクローカル・内部向けホストは取得できません"
+    End If
+    If IsPrivateIpv4(host) Then Err.Raise vbObjectError + 2209, "web_fetch", "プライベートIPアドレスは取得できません"
+End Sub
+
+Private Function UrlAuthorityEnd(ByVal url As String, ByVal startPos As Long) As Long
+    Dim slashPos As Long, queryPos As Long, hashPos As Long, result As Long
+    slashPos = InStr(startPos, url, "/")
+    queryPos = InStr(startPos, url, "?")
+    hashPos = InStr(startPos, url, "#")
+    result = Len(url) + 1
+    If slashPos > 0 And slashPos < result Then result = slashPos
+    If queryPos > 0 And queryPos < result Then result = queryPos
+    If hashPos > 0 And hashPos < result Then result = hashPos
+    If result <= Len(url) Then UrlAuthorityEnd = result
+End Function
+
+Private Function IsPrivateIpv4(ByVal host As String) As Boolean
+    Dim parts() As String
+    Dim firstPart As Long, secondPart As Long
+    If InStr(host, ".") = 0 Then Exit Function
+    parts = Split(host, ".")
+    If UBound(parts) <> 3 Then Exit Function
+    If Not IsNumeric(parts(0)) Or Not IsNumeric(parts(1)) Then Exit Function
+    firstPart = CLng(parts(0))
+    secondPart = CLng(parts(1))
+    IsPrivateIpv4 = (firstPart = 10) Or _
+        (firstPart = 192 And secondPart = 168) Or _
+        (firstPart = 172 And secondPart >= 16 And secondPart <= 31) Or _
+        (firstPart = 127) Or (firstPart = 169 And secondPart = 254)
+End Function
+
+Private Function WebFetchToText(ByVal body As String, ByVal contentType As String) As String
+    Dim doc As Object
+    If InStr(1, LCase$(contentType), "html", vbTextCompare) = 0 Then
+        WebFetchToText = body
+        Exit Function
+    End If
+
+    On Error GoTo Fallback
+    Set doc = CreateObject("HTMLFile")
+    doc.Open
+    doc.Write body
+    doc.Close
+    WebFetchToText = doc.body.innerText
+    Exit Function
+
+Fallback:
+    Err.Clear
+    WebFetchToText = body
 End Function

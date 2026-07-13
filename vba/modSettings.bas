@@ -1,7 +1,7 @@
 Attribute VB_Name = "modSettings"
 Option Explicit
 
-Public Const APP_VERSION As String = "1.1.0"
+Public Const APP_VERSION As String = "1.2.0"
 Public Const SHEET_SETTINGS As String = "設定"
 Public Const SHEET_CHATLOG As String = "チャットログ"
 Public Const SHEET_OPS As String = "操作"
