@@ -27,6 +27,10 @@ ITEM|Choose workspace|このPCで使うWorkspaceフォルダーを選択し、�
 ITEM|Clear chat log|チャットログを消去します。必要な記録は先に保存してください。
 ITEM|Workspace safety|Workspaceの実体パスと、親フォルダー・外部パスの拒否状態を確認します。
 
+SECTION|AIが使えるExcel生成ツール
+ITEM|create_excel|CSV形式のデータから、数式・見出し・罫線・列幅を含むExcelファイルを作成します。
+ITEM|create_chart|既存のExcelファイルに、縦棒・横棒・折れ線・円グラフを追加します。
+
 SECTION|安全ルール
 ITEM|Workspace限定|ファイル操作はWorkspace内だけに制限されます。親フォルダー参照（..）は拒否します。
 ITEM|確認|AutoRun=no、Confirm danger=yesの組み合わせを推奨します。

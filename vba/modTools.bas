@@ -11,6 +11,7 @@ Public Function Tools_GetDefinitionsJson() As String
         ToolDef("delete_file", "Delete a file (requires confirmation setting)", "{""path"":{""type"":""string""}}") & "," & _
         ToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string"",""description"":""e.g. data\\*.csv""},""output_path"":{""type"":""string""}}") & "," & _
         ToolDef("create_excel", "Create a new Excel workbook from CSV-like data", "{""path"":{""type"":""string"",""description"":""Output .xlsx path""},""sheet_name"":{""type"":""string""},""csv_content"":{""type"":""string"",""description"":""Comma-separated rows, newline-separated lines""}}") & "," & _
+        ToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string"",""description"":""Existing .xlsx or .xlsm path""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string"",""description"":""Source range such as A1:D4""},""chart_type"":{""type"":""string"",""description"":""column, bar, line, or pie""},""title"":{""type"":""string""}}") & "," & _
         ToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & _
         "]"
 End Function
@@ -25,6 +26,7 @@ Public Function Tools_GetAnthropicDefinitionsJson() As String
         AnthropicToolDef("delete_file", "Delete a file (requires confirmation setting)", "{""path"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string""},""output_path"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("create_excel", "Create a new Excel workbook from CSV-like data", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""csv_content"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string""},""chart_type"":{""type"":""string""},""title"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "]"
 End Function
 
@@ -101,6 +103,14 @@ Public Function Tools_Execute(ByVal toolName As String, ByVal argsJson As String
                 End If
             End If
             Tools_Execute = Tool_CreateExcel(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "csv_content"))
+        Case "create_chart"
+            If Not autoApproved And Not IsAutoRunEnabled() Then
+                If Not ConfirmToolAction("create_chart", argsJson) Then
+                    Tools_Execute = "ユーザーが実行をキャンセルしました"
+                    Exit Function
+                End If
+            End If
+            Tools_Execute = Tool_CreateChart(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "source_range"), JsonGetArg(argsJson, "chart_type"), JsonGetArg(argsJson, "title"))
         Case "grep_files"
             Tools_Execute = Tool_GrepFiles(JsonGetArg(argsJson, "folder"), JsonGetArg(argsJson, "pattern"))
         Case Else
@@ -386,6 +396,54 @@ Private Function Tool_CreateExcel(ByVal path As String, ByVal sheetName As Strin
     xl.Quit
 
     Tool_CreateExcel = "Excel作成完了: " & safePath
+End Function
+
+Private Function Tool_CreateChart(ByVal path As String, ByVal sheetName As String, ByVal sourceRange As String, ByVal chartType As String, ByVal title As String) As String
+    Dim safePath As String
+    Dim xl As Object
+    Dim wb As Object
+    Dim ws As Object
+    Dim chartObject As Object
+    Dim chart As Object
+
+    safePath = ResolveSafePath(path)
+    If LCase$(Right$(safePath, 5)) <> ".xlsx" And LCase$(Right$(safePath, 5)) <> ".xlsm" Then
+        Err.Raise vbObjectError + 2101, "create_chart", "Excelファイル(.xlsx/.xlsm)を指定してください"
+    End If
+    If Len(sheetName) = 0 Then sheetName = "Sheet1"
+    If Len(sourceRange) = 0 Then sourceRange = "A1:B10"
+
+    Set xl = CreateObject("Excel.Application")
+    xl.Visible = False
+    xl.DisplayAlerts = False
+    Set wb = xl.Workbooks.Open(safePath)
+    Set ws = wb.Worksheets(sheetName)
+    xl.CalculateFull
+
+    Set chartObject = ws.ChartObjects.Add(320, 20, 480, 280)
+    Set chart = chartObject.Chart
+    chart.SetSourceData ws.Range(sourceRange)
+    chart.ChartType = ChartTypeValue(chartType)
+    If Len(title) > 0 Then
+        chart.HasTitle = True
+        chart.ChartTitle.Text = title
+    End If
+    chart.HasLegend = True
+    chart.Legend.Position = -4107
+
+    wb.Save
+    wb.Close False
+    xl.Quit
+    Tool_CreateChart = "グラフ作成完了: " & safePath
+End Function
+
+Private Function ChartTypeValue(ByVal chartType As String) As Long
+    Select Case LCase$(Trim$(chartType))
+        Case "bar", "横棒": ChartTypeValue = 57
+        Case "line", "折れ線": ChartTypeValue = 4
+        Case "pie", "円": ChartTypeValue = 5
+        Case Else: ChartTypeValue = 51
+    End Select
 End Function
 
 Private Function Tool_GrepFiles(ByVal folder As String, ByVal pattern As String) As String
