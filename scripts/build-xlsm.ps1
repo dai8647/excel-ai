@@ -131,7 +131,10 @@ try {
     for ($i = 0; $i -lt $labels.Count; $i++) { $ws.Cells.Item($i + 2, 1).Value2 = $labels[$i]; $ws.Cells.Item($i + 2, 3).Value2 = $hints[$i] }
     $ws.Cells.Item(2, 2).Value2 = "OpenAI"
     $ws.Cells.Item(3, 2).NumberFormat = "@"
-    $ws.Cells.Item(3, 2).Value2 = $routerKey
+    # Never persist a local 9router/API key in the generated workbook.
+    # The key may be used transiently below to fetch the model catalog, but
+    # each user must enter their own key in 設定!B3 after opening the file.
+    $ws.Cells.Item(3, 2).Value2 = ""
     $ws.Cells.Item(4, 2).Value2 = "http://127.0.0.1:20128/v1"
     $ws.Cells.Item(6, 2).Value2 = "workspace"
     $ws.Cells.Item(7, 2).Value2 = "no"
