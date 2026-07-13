@@ -61,6 +61,16 @@ Model:    （モデル一覧から選択）
 API Key:  9routerで発行したキー
 ```
 
+**OpenCode Zen（OpenAI互換）**
+```
+Connection type: OpenAI
+Base URL: https://opencode.ai/zen/v1
+Model:    deepseek-v4-flash-free など（モデル一覧から選択）
+API Key:  OpenCode Zenで発行したキー
+```
+
+OpenCode Zenはモデルごとに利用条件と料金が異なります。無料モデルを含め、機密情報を送る前にOpenCode Zenの最新の利用条件を確認してください。
+
 **ローカル LLM（LM Studio — Ollama 不要）**
 ```
 1. LM Studio をインストール（https://lmstudio.ai）

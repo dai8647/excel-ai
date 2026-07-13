@@ -15,6 +15,7 @@ ITEM|設定!B8|Confirm danger|yesを推奨します。危険な操作の前に�
 ITEM|設定!B9|Max steps|1回の依頼でAIが進める最大ステップ数です。通常は12で十分です。
 ITEM|設定!B10|Anthropic version|Anthropic互換APIを使う場合のバージョンです。通常は2023-06-01のままにします。
 NOTE|配布時の注意|生成された配布ブックにはAPIキーを含めません。各ユーザーが自分のキーを設定!B3に入力し、Workspaceを設定!B6で選択してください。
+NOTE|OpenCode Zen|OpenAI互換として接続できます。Base URLは https://opencode.ai/zen/v1、モデルはRefresh modelsで取得してください。
 
 SECTION|操作シートのボタン
 ITEM|Refresh models|モデル一覧を接続先から再取得します。

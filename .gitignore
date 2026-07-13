@@ -5,6 +5,11 @@
 # Local workspaces can contain user files and test output.
 workspace/
 
+# Local credentials and environment files must never enter the repository.
+env.txt
+.env
+*.env
+
 # Windows and editor artifacts.
 Thumbs.db
 .vs/
