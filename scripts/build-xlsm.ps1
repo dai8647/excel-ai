@@ -47,7 +47,7 @@ try {
 
     $wb.Worksheets.Item(1).Name = "README"
     $wb.Worksheets.Item(2).Name = [char]0x8A2D + [char]0x5B9A
-    $wb.Worksheets.Item(3).Name = [char]0x64CD + [char]0x4F5C
+    $wb.Worksheets.Item(3).Name = -join @([char]0x30DB, [char]0x30FC, [char]0x30E0)
     $wb.Worksheets.Item(4).Name = -join @([char]0x30C1, [char]0x30E3, [char]0x30C3, [char]0x30C8, [char]0x30ED, [char]0x30B0)
     $wb.Worksheets.Item(5).Name = -join @([char]0x30E2, [char]0x30C7, [char]0x30EB, [char]0x4E00, [char]0x89A7)
 
@@ -152,57 +152,76 @@ try {
 
     $ops = $wb.Worksheets.Item(3)
     $ops.Tab.Color = $teal
-    $ops.Range("A1:H1").Merge(); $ops.Cells.Item(1, 1).Value2 = "ExcelAI | Operation Center"
-    $ops.Range("A2:H2").Merge(); $ops.Cells.Item(2, 1).Value2 = "Check settings -> test connection -> enter Request -> run"
-    $ops.Range("A1:H1").Interior.Color = $navy; $ops.Range("A1:H1").Font.Color = $white; $ops.Range("A1:H1").Font.Bold = $true; $ops.Range("A1:H1").Font.Size = 18
+    $ops.Range("A1:H1").Merge(); $ops.Cells.Item(1, 1).Value2 = "ExcelAI | Home"
+    $ops.Range("A2:H2").Merge(); $ops.Cells.Item(2, 1).Value2 = "Write a request, then press Ctrl+Enter. Progress and results stay here."
+    $ops.Range("A1:H1").Interior.Color = $navy; $ops.Range("A1:H1").Font.Color = $white; $ops.Range("A1:H1").Font.Bold = $true; $ops.Range("A1:H1").Font.Size = 20
     $ops.Range("A2:H2").Interior.Color = $pale; $ops.Range("A2:H2").Font.Color = $muted; $ops.Range("A2:H2").Font.Size = 11
-    $ops.Columns.Item("A").ColumnWidth = 26; $ops.Columns.Item("B").ColumnWidth = 68
-    foreach ($column in @("C", "D", "E", "F", "G", "H")) { $ops.Columns.Item($column).ColumnWidth = 14 }
-    $ops.Rows("1:2").RowHeight = 24; $ops.Rows.Item(1).RowHeight = 32
+    $ops.Columns.Item("A").ColumnWidth = 18; $ops.Columns.Item("B").ColumnWidth = 20
+    foreach ($column in @("C", "D", "E", "F", "G", "H")) { $ops.Columns.Item($column).ColumnWidth = 16 }
+    $ops.Range("A1:H30").VerticalAlignment = -4160; $ops.Range("A1:H30").WrapText = $true
+    $ops.Rows("1:2").RowHeight = 24; $ops.Rows.Item(1).RowHeight = 36; $ops.Rows.Item(2).RowHeight = 26
+
+    $ops.Cells.Item(4, 1).Value2 = "Provider"; $ops.Cells.Item(5, 1).Value2 = "Model"; $ops.Cells.Item(6, 1).Value2 = "Workspace"
+    $ops.Range("A4:A6").Interior.Color = $lightBlue; $ops.Range("A4:A6").Font.Bold = $true
+    $ops.Range("B4:D4").Merge(); $ops.Range("B5:D5").Merge(); $ops.Range("B6:H6").Merge()
+    $ops.Cells.Item(4, 2).Value2 = "OpenAI"; $ops.Cells.Item(5, 2).Value2 = "Refresh models to choose"; $ops.Cells.Item(6, 2).Value2 = "workspace"
+    $ops.Range("B4:D6").Interior.Color = $pale
+    $ops.Range("F4:H4").Merge(); $ops.Range("F5:H5").Merge()
+    $ops.Cells.Item(4, 6).Value2 = "AutoRun OFF"; $ops.Cells.Item(5, 6).Value2 = "Confirm ON"
+    $ops.Range("F4:H5").Interior.Color = $lightBlue; $ops.Range("F4:H5").Font.Bold = $true
+    $ops.Range("A4:H6").Borders.LineStyle = 1
+
+    $ops.Range("A8:H8").Merge(); $ops.Cells.Item(8, 1).Value2 = "ASK EXCELAI"
+    $ops.Range("A8:H8").Interior.Color = $blue; $ops.Range("A8:H8").Font.Color = $white; $ops.Range("A8:H8").Font.Bold = $true
+    $ops.Range("A9:A11").Merge(); $ops.Cells.Item(9, 1).Value2 = "Request"
+    $ops.Range("A9:A11").Interior.Color = $blue; $ops.Range("A9:A11").Font.Color = $white; $ops.Range("A9:A11").Font.Bold = $true
+    $ops.Range("B9:H11").Merge(); $ops.Cells.Item(9, 2).Value2 = ""
+    $ops.Range("B9:H11").Interior.Color = $inputFill; $ops.Range("B9:H11").Borders.LineStyle = 1
+    $ops.Rows("9:11").RowHeight = 24
+
     $buttonSpecs = @(
-        @("1. Refresh models", "RefreshModels", $blue),
-        @("2. Test connection", "TestConnection", $teal),
-        @("3. Open request panel", "ShowAgent", $navy),
-        @("4. Run request", "RunSheetPrompt", $green),
-        @("Choose workspace", "PickWorkspaceFolder", $amber),
-        @("Open workspace", "OpenWorkspaceFolder", $amber),
-        @("Clear chat log", "ClearChatLog", $muted),
-        @("Workspace safety", "WorkspaceSafetyCheck", $teal)
+        @("Run  Ctrl+Enter", "RunSheetPrompt", $green),
+        @("Refresh models", "RefreshModels", $blue),
+        @("Test connection", "TestConnection", $teal),
+        @("Open settings", "OpenSettings", $navy),
+        @("Workspace", "OpenWorkspaceFolder", $amber),
+        @("Choose folder", "PickWorkspaceFolder", $amber),
+        @("Safety check", "WorkspaceSafetyCheck", $teal),
+        @("Open log", "OpenChatLog", $muted)
     )
     $buttonIndex = 0
     foreach ($spec in $buttonSpecs) {
         $buttonRow = [math]::Floor($buttonIndex / 4)
         $buttonColumn = $buttonIndex % 4
-        $button = $ops.Buttons().Add((20 + ($buttonColumn * 240)), (60 + ($buttonRow * 42)), 220, 30)
+        $button = $ops.Buttons().Add((20 + ($buttonColumn * 180)), (245 + ($buttonRow * 38)), 165, 28)
         $button.Characters().Text = $spec[0]
         $button.OnAction = $spec[1]
+        $button.PrintObject = $true
         try {
             $button.ShapeRange.Fill.ForeColor.RGB = [int]$spec[2]
             $button.ShapeRange.Line.ForeColor.RGB = [int]$spec[2]
             $button.Characters().Font.Color = $deepNavy
             $button.Characters().Font.Bold = $true
-            $button.Characters().Font.Size = 11
+            $button.Characters().Font.Size = 10
         }
         catch { }
-        try { $button.Font.ColorIndex = 1; $button.Characters().Font.ColorIndex = 1; $button.Characters().Font.Bold = $true; $button.Characters().Font.Size = 11 } catch { }
+        try { $button.Font.ColorIndex = 1; $button.Characters().Font.ColorIndex = 1; $button.Characters().Font.Bold = $true; $button.Characters().Font.Size = 10 } catch { }
         $buttonIndex += 1
     }
-    $ops.Range("A13:B13").Merge(); $ops.Cells.Item(13, 1).Value2 = "LATEST CHECK"
-    $ops.Cells.Item(14, 1).Value2 = "Time"; $ops.Cells.Item(15, 1).Value2 = "Result"
-    $ops.Range("A13:B13").Interior.Color = $navy; $ops.Range("A13:B13").Font.Color = $white; $ops.Range("A13:B13").Font.Bold = $true
-    $ops.Range("A14:A15").Interior.Color = $lightBlue; $ops.Range("A14:A15").Font.Bold = $true; $ops.Range("B14:B15").Interior.Color = $pale
-    $ops.Range("A13:B15").Borders.LineStyle = 1
-    $ops.Rows.Item(13).RowHeight = 24; $ops.Rows.Item(14).RowHeight = 24; $ops.Rows.Item(15).RowHeight = 54
-    $ops.Cells.Item(7, 1).Value2 = "Request"
-    $ops.Cells.Item(7, 2).Value2 = ""
-    $ops.Cells.Item(9, 1).Value2 = "Result"
-    $ops.Range("A7:A7").Interior.Color = $blue; $ops.Range("A7:A7").Font.Color = $white; $ops.Range("A7:A7").Font.Bold = $true
-    $ops.Range("A9:A10").Merge(); $ops.Range("A9:A10").Interior.Color = $blue; $ops.Range("A9:A10").Font.Color = $white; $ops.Range("A9:A10").Font.Bold = $true
-    $ops.Range("B7:H7").Merge(); $ops.Range("B9:H10").Merge()
-    $ops.Range("B7:H7").Interior.Color = $inputFill; $ops.Range("B9:H10").Interior.Color = $pale
-    $ops.Range("A7:H10").Borders.LineStyle = 1
-    $ops.Range("B7:H7").WrapText = $true; $ops.Range("B9:H10").WrapText = $true
-    $ops.Rows.Item(7).RowHeight = 30; $ops.Rows("9:10").RowHeight = 28
+
+    $ops.Range("A16:H16").Merge(); $ops.Cells.Item(16, 1).Value2 = "LIVE ACTIVITY"
+    $ops.Range("A16:H16").Interior.Color = $navy; $ops.Range("A16:H16").Font.Color = $white; $ops.Range("A16:H16").Font.Bold = $true
+    $ops.Range("A17:A18").Merge(); $ops.Cells.Item(17, 1).Value2 = "Status"
+    $ops.Range("B17:H18").Merge(); $ops.Cells.Item(17, 2).Value2 = "Ready"
+    $ops.Range("A17:A18").Interior.Color = $lightBlue; $ops.Range("A17:A18").Font.Bold = $true; $ops.Range("B17:H18").Interior.Color = $pale
+    $ops.Range("A16:H18").Borders.LineStyle = 1; $ops.Rows("17:18").RowHeight = 24
+
+    $ops.Range("A20:H20").Merge(); $ops.Cells.Item(20, 1).Value2 = "LAST RESULT"
+    $ops.Range("A20:H20").Interior.Color = $navy; $ops.Range("A20:H20").Font.Color = $white; $ops.Range("A20:H20").Font.Bold = $true
+    $ops.Range("A21:A24").Merge(); $ops.Cells.Item(21, 1).Value2 = "Result"
+    $ops.Range("B21:H24").Merge(); $ops.Cells.Item(21, 2).Value2 = ""
+    $ops.Range("A21:A24").Interior.Color = $lightBlue; $ops.Range("A21:A24").Font.Bold = $true; $ops.Range("B21:H24").Interior.Color = $pale
+    $ops.Range("A20:H24").Borders.LineStyle = 1; $ops.Rows("21:24").RowHeight = 24
 
     $log = $wb.Worksheets.Item(4)
     $log.Tab.Color = $muted

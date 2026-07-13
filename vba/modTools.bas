@@ -4,7 +4,7 @@ Option Explicit
 Public Function Tools_GetDefinitionsJson() As String
     Tools_GetDefinitionsJson = "[" & _
         ToolDef("list_dir", "List files and folders in a directory", "{""path"":{""type"":""string"",""description"":""Relative or absolute path within workspace""}}") & "," & _
-        ToolDef("read_file", "Read a text or CSV file (max 50KB)", "{""path"":{""type"":""string""}}") & "," & _
+        ToolDef("read_file", "Read a text file in pages (default 100KB; use max_chars and start_chars for larger files)", "{""path"":{""type"":""string""},""max_chars"":{""type"":""integer"",""description"":""1000-200000 characters""},""start_chars"":{""type"":""integer"",""description"":""Character offset for paging""}}") & "," & _
         ToolDef("write_file", "Write or overwrite a text file", "{""path"":{""type"":""string""},""content"":{""type"":""string""}}") & "," & _
         ToolDef("append_file", "Append text to a file", "{""path"":{""type"":""string""},""content"":{""type"":""string""}}") & "," & _
         ToolDef("move_file", "Move or rename a file/folder", "{""source"":{""type"":""string""},""destination"":{""type"":""string""}}") & "," & _
@@ -12,6 +12,7 @@ Public Function Tools_GetDefinitionsJson() As String
         ToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string"",""description"":""e.g. data\\*.csv""},""output_path"":{""type"":""string""}}") & "," & _
         ToolDef("create_excel", "Create a new Excel workbook from CSV-like data", "{""path"":{""type"":""string"",""description"":""Output .xlsx path""},""sheet_name"":{""type"":""string""},""csv_content"":{""type"":""string"",""description"":""Comma-separated rows, newline-separated lines""}}") & "," & _
         ToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string"",""description"":""Existing .xlsx or .xlsm path""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string"",""description"":""Source range such as A1:D4""},""chart_type"":{""type"":""string"",""description"":""column, bar, line, or pie""},""title"":{""type"":""string""}}") & "," & _
+        ToolDef("inspect_excel", "Inspect an .xlsx/.xlsm workbook without reading its binary contents", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string"",""description"":""Optional sheet name""},""include_formulas"":{""type"":""boolean"",""description"":""Include formulas in the sample""}}") & "," & _
         ToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "," & _
         ToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & _
         "]"
@@ -20,7 +21,7 @@ End Function
 Public Function Tools_GetAnthropicDefinitionsJson() As String
     Tools_GetAnthropicDefinitionsJson = "[" & _
         AnthropicToolDef("list_dir", "List files and folders in a directory", "{""path"":{""type"":""string"",""description"":""Relative or absolute path within workspace""}}") & "," & _
-        AnthropicToolDef("read_file", "Read a text or CSV file (max 50KB)", "{""path"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("read_file", "Read a text file in pages (default 100KB; use max_chars and start_chars for larger files)", "{""path"":{""type"":""string""},""max_chars"":{""type"":""integer"",""description"":""1000-200000 characters""},""start_chars"":{""type"":""integer"",""description"":""Character offset for paging""}}") & "," & _
         AnthropicToolDef("write_file", "Write or overwrite a text file", "{""path"":{""type"":""string""},""content"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("append_file", "Append text to a file", "{""path"":{""type"":""string""},""content"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("move_file", "Move or rename a file/folder", "{""source"":{""type"":""string""},""destination"":{""type"":""string""}}") & "," & _
@@ -28,6 +29,7 @@ Public Function Tools_GetAnthropicDefinitionsJson() As String
         AnthropicToolDef("merge_csv", "Merge CSV files matching a pattern into one file", "{""source_pattern"":{""type"":""string""},""output_path"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("create_excel", "Create a new Excel workbook from CSV-like data", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""csv_content"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string""},""chart_type"":{""type"":""string""},""title"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("inspect_excel", "Inspect an .xlsx/.xlsm workbook without reading its binary contents", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""include_formulas"":{""type"":""boolean""}}") & "," & _
         AnthropicToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & "]"
 End Function
@@ -44,89 +46,67 @@ Private Function AnthropicToolDef(ByVal name As String, ByVal description As Str
         ",""input_schema"":{""type"":""object"",""properties"":" & params & "}}"
 End Function
 
-Public Function Tools_Execute(ByVal toolName As String, ByVal argsJson As String, ByVal autoApproved As Boolean) As String
+Public Function Tools_Execute(ByVal toolName As String, ByVal argsJson As String, ByRef autoApproved As Boolean) As String
     On Error GoTo ErrHandler
 
     Select Case LCase$(toolName)
         Case "list_dir"
             Tools_Execute = Tool_ListDir(JsonGetArg(argsJson, "path"))
         Case "read_file"
-            Tools_Execute = Tool_ReadFile(JsonGetArg(argsJson, "path"))
+            Tools_Execute = Tool_ReadFile(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "max_chars"), JsonGetArg(argsJson, "start_chars"))
         Case "write_file"
-            If Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("write_file", argsJson) Then
+            If Not ApproveWriteTool("write_file", argsJson, autoApproved) Then
                     Tools_Execute = "ユーザーが実行をキャンセルしました"
                     Exit Function
-                End If
             End If
             Tools_Execute = Tool_WriteFile(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "content"))
         Case "append_file"
-            If Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("append_file", argsJson) Then
+            If Not ApproveWriteTool("append_file", argsJson, autoApproved) Then
                     Tools_Execute = "ユーザーが実行をキャンセルしました"
                     Exit Function
-                End If
             End If
             Tools_Execute = Tool_AppendFile(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "content"))
         Case "move_file"
-            If Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("move_file", argsJson) Then
+            If Not ApproveWriteTool("move_file", argsJson, autoApproved) Then
                     Tools_Execute = "ユーザーが実行をキャンセルしました"
                     Exit Function
-                End If
             End If
             Tools_Execute = Tool_MoveFile(JsonGetArg(argsJson, "source"), JsonGetArg(argsJson, "destination"))
         Case "delete_file"
-            If IsConfirmDangerEnabled() Then
-                If MsgBox("削除を実行しますか？" & vbCrLf & JsonGetArg(argsJson, "path"), vbYesNo + vbExclamation) <> vbYes Then
+            If IsConfirmDangerEnabled() And Not autoApproved Then
+                If Not ConfirmToolAction("delete_file", argsJson) Then
                     Tools_Execute = "ユーザーが削除をキャンセルしました"
                     Exit Function
                 End If
-            ElseIf Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("delete_file", argsJson) Then
-                    Tools_Execute = "ユーザーが実行をキャンセルしました"
-                    Exit Function
-                End If
+                autoApproved = True
+            ElseIf Not ApproveWriteTool("delete_file", argsJson, autoApproved) Then
+                Tools_Execute = "ユーザーが削除をキャンセルしました"
+                Exit Function
             End If
             Tools_Execute = Tool_DeleteFile(JsonGetArg(argsJson, "path"))
         Case "merge_csv"
-            If Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("merge_csv", argsJson) Then
+            If Not ApproveWriteTool("merge_csv", argsJson, autoApproved) Then
                     Tools_Execute = "ユーザーが実行をキャンセルしました"
                     Exit Function
-                End If
             End If
             Tools_Execute = Tool_MergeCsv(JsonGetArg(argsJson, "source_pattern"), JsonGetArg(argsJson, "output_path"))
         Case "create_excel"
-            If Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("create_excel", argsJson) Then
+            If Not ApproveWriteTool("create_excel", argsJson, autoApproved) Then
                     Tools_Execute = "ユーザーが実行をキャンセルしました"
                     Exit Function
-                End If
             End If
             Tools_Execute = Tool_CreateExcel(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "csv_content"))
         Case "create_chart"
-            If Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("create_chart", argsJson) Then
+            If Not ApproveWriteTool("create_chart", argsJson, autoApproved) Then
                     Tools_Execute = "ユーザーが実行をキャンセルしました"
                     Exit Function
-                End If
             End If
             Tools_Execute = Tool_CreateChart(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "source_range"), JsonGetArg(argsJson, "chart_type"), JsonGetArg(argsJson, "title"))
+        Case "inspect_excel"
+            Tools_Execute = Tool_InspectExcel(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "include_formulas"))
         Case "grep_files"
             Tools_Execute = Tool_GrepFiles(JsonGetArg(argsJson, "folder"), JsonGetArg(argsJson, "pattern"))
         Case "web_fetch"
-            If IsConfirmDangerEnabled() Then
-                If Not ConfirmToolAction("web_fetch", argsJson) Then
-                    Tools_Execute = "ユーザーがWeb取得をキャンセルしました"
-                    Exit Function
-                End If
-            ElseIf Not autoApproved And Not IsAutoRunEnabled() Then
-                If Not ConfirmToolAction("web_fetch", argsJson) Then
-                    Tools_Execute = "ユーザーがWeb取得をキャンセルしました"
-                    Exit Function
-                End If
-            End If
             Tools_Execute = Tool_WebFetch(JsonGetArg(argsJson, "url"), JsonGetArg(argsJson, "max_chars"))
         Case Else
             Tools_Execute = "未知のツール: " & toolName
@@ -140,6 +120,21 @@ Private Function ConfirmToolAction(ByVal toolName As String, ByVal argsJson As S
     ConfirmToolAction = (MsgBox("ツール実行の確認" & vbCrLf & vbCrLf & _
         "ツール: " & toolName & vbCrLf & "引数: " & Left$(argsJson, 500) & vbCrLf & vbCrLf & _
         "実行しますか？", vbYesNo + vbQuestion, "ExcelAI") = vbYes)
+End Function
+
+Private Function ApproveWriteTool(ByVal toolName As String, ByVal argsJson As String, ByRef autoApproved As Boolean) As Boolean
+    If autoApproved Or IsAutoRunEnabled() Then
+        autoApproved = True
+        ApproveWriteTool = True
+        Exit Function
+    End If
+
+    If ConfirmToolAction(toolName, argsJson) Then
+        autoApproved = True
+        ApproveWriteTool = True
+    Else
+        ApproveWriteTool = False
+    End If
 End Function
 
 Private Function Tool_ListDir(ByVal path As String) As String
@@ -175,11 +170,18 @@ Private Function Tool_ListDir(ByVal path As String) As String
     Tool_ListDir = result
 End Function
 
-Private Function Tool_ReadFile(ByVal path As String) As String
+Private Function Tool_ReadFile(ByVal path As String, Optional ByVal maxCharsText As String = "", Optional ByVal startCharsText As String = "") As String
+    Const DEFAULT_MAX_CHARS As Long = 100000
+    Const ABSOLUTE_MAX_CHARS As Long = 200000
+    Const MAX_TEXT_FILE_BYTES As Long = 5242880
     Dim fso As Object
     Dim stream As Object
     Dim safePath As String
     Dim content As String
+    Dim extension As String
+    Dim maxChars As Long
+    Dim startChars As Long
+    Dim chunk As String
 
     Set fso = CreateObject("Scripting.FileSystemObject")
     safePath = ResolveSafePath(path)
@@ -189,8 +191,17 @@ Private Function Tool_ReadFile(ByVal path As String) As String
         Exit Function
     End If
 
-    If fso.GetFile(safePath).Size > 51200 Then
-        Tool_ReadFile = "ファイルが大きすぎます (50KB上限): " & safePath
+    extension = LCase$(fso.GetExtensionName(safePath))
+    If extension = "xlsx" Or extension = "xlsm" Or extension = "xlsb" Or extension = "xls" Then
+        Tool_ReadFile = "Excelバイナリファイルです。read_fileではなくinspect_excelを使ってください: " & safePath
+        Exit Function
+    ElseIf extension = "pdf" Or extension = "docx" Or extension = "zip" Then
+        Tool_ReadFile = "バイナリファイル形式はread_fileでは直接読めません: " & safePath
+        Exit Function
+    End If
+
+    If fso.GetFile(safePath).Size > MAX_TEXT_FILE_BYTES Then
+        Tool_ReadFile = "テキストファイルが大きすぎます (5MB上限): " & safePath
         Exit Function
     End If
 
@@ -202,7 +213,23 @@ Private Function Tool_ReadFile(ByVal path As String) As String
     content = stream.ReadText
     stream.Close
 
-    Tool_ReadFile = content
+    maxChars = Val(maxCharsText)
+    If maxChars <= 0 Then maxChars = DEFAULT_MAX_CHARS
+    If maxChars < 1000 Then maxChars = 1000
+    If maxChars > ABSOLUTE_MAX_CHARS Then maxChars = ABSOLUTE_MAX_CHARS
+    startChars = Val(startCharsText)
+    If startChars < 0 Then startChars = 0
+    If startChars >= Len(content) Then
+        Tool_ReadFile = "ファイル末尾です。start_chars=" & startChars & ", length=" & Len(content)
+        Exit Function
+    End If
+
+    chunk = Mid$(content, startChars + 1, maxChars)
+    Tool_ReadFile = "FILE: " & safePath & vbCrLf & _
+        "CHARS: " & Len(content) & ", start_chars=" & startChars & ", returned=" & Len(chunk) & vbCrLf & vbCrLf & chunk
+    If startChars + Len(chunk) < Len(content) Then
+        Tool_ReadFile = Tool_ReadFile & vbCrLf & vbCrLf & "[続きあり: start_chars=" & (startChars + Len(chunk)) & "]"
+    End If
 End Function
 
 Private Function Tool_WriteFile(ByVal path As String, ByVal content As String) As String
@@ -461,6 +488,76 @@ Private Function ChartTypeValue(ByVal chartType As String) As Long
     End Select
 End Function
 
+Private Function Tool_InspectExcel(ByVal path As String, ByVal sheetName As String, ByVal includeFormulasText As String) As String
+    Dim safePath As String
+    Dim xl As Object
+    Dim wb As Object
+    Dim ws As Object
+    Dim used As Object
+    Dim sh As Object
+    Dim result As String
+    Dim sampleRows As Long, sampleCols As Long
+    Dim r As Long, c As Long
+    Dim valueText As String
+    Dim includeFormulas As Boolean
+
+    On Error GoTo ErrHandler
+    safePath = ResolveSafePath(path)
+    If LCase$(Right$(safePath, 5)) <> ".xlsx" And LCase$(Right$(safePath, 5)) <> ".xlsm" And LCase$(Right$(safePath, 5)) <> ".xlsb" And LCase$(Right$(safePath, 4)) <> ".xls" Then
+        Err.Raise vbObjectError + 2301, "inspect_excel", "Excelファイル(.xlsx/.xlsm/.xlsb/.xls)を指定してください"
+    End If
+
+    includeFormulas = (LCase$(Trim$(includeFormulasText)) = "true" Or LCase$(Trim$(includeFormulasText)) = "yes" Or Trim$(includeFormulasText) = "1")
+    Set xl = CreateObject("Excel.Application")
+    xl.Visible = False
+    xl.DisplayAlerts = False
+    Set wb = xl.Workbooks.Open(safePath, 0, True)
+    result = "WORKBOOK: " & safePath & vbCrLf & "SHEETS:" & vbCrLf
+    For Each sh In wb.Worksheets
+        Set used = sh.UsedRange
+        result = result & "- " & sh.Name & " | " & used.Address(False, False) & " | rows=" & used.Rows.Count & " cols=" & used.Columns.Count & vbCrLf
+    Next sh
+
+    If Len(sheetName) > 0 Then
+        Set ws = wb.Worksheets(sheetName)
+    Else
+        Set ws = wb.Worksheets(1)
+    End If
+    Set used = ws.UsedRange
+    result = result & vbCrLf & "SAMPLE SHEET: " & ws.Name & " (" & used.Address(False, False) & ")" & vbCrLf
+    sampleRows = used.Rows.Count
+    If sampleRows > 20 Then sampleRows = 20
+    sampleCols = used.Columns.Count
+    If sampleCols > 10 Then sampleCols = 10
+    For r = 1 To sampleRows
+        For c = 1 To sampleCols
+            If includeFormulas Then
+                valueText = CStr(ws.Cells(used.Row + r - 1, used.Column + c - 1).Formula)
+            Else
+                valueText = CStr(ws.Cells(used.Row + r - 1, used.Column + c - 1).Value2)
+            End If
+            valueText = Replace(valueText, vbCr, " ")
+            valueText = Replace(valueText, vbLf, " ")
+            If Len(valueText) > 300 Then valueText = Left$(valueText, 300) & "..."
+            If Len(valueText) > 0 Then result = result & ws.Cells(used.Row + r - 1, used.Column + c - 1).Address(False, False) & "=" & valueText & vbCrLf
+        Next c
+    Next r
+    GoTo Cleanup
+
+ErrHandler:
+    result = "inspect_excelエラー: " & Err.Description
+
+Cleanup:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close False
+    If Not xl Is Nothing Then xl.Quit
+    Set ws = Nothing
+    Set used = Nothing
+    Set wb = Nothing
+    Set xl = Nothing
+    Tool_InspectExcel = result
+End Function
+
 Private Function Tool_GrepFiles(ByVal folder As String, ByVal pattern As String) As String
     Dim fso As Object
     Dim folderPath As String
@@ -506,7 +603,7 @@ Private Function Tool_GrepFiles(ByVal folder As String, ByVal pattern As String)
 End Function
 
 Private Function Tool_WebFetch(ByVal url As String, ByVal maxCharsText As String) As String
-    Const FETCH_TIMEOUT_MS As Long = 15000
+    Const FETCH_TIMEOUT_MS As Long = 30000
     Const MAX_RESPONSE_BYTES As Long = 500000
     Const DEFAULT_MAX_CHARS As Long = 20000
     Const ABSOLUTE_MAX_CHARS As Long = 50000

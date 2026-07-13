@@ -4,7 +4,7 @@ Option Explicit
 Public Const APP_VERSION As String = "1.2.0"
 Public Const SHEET_SETTINGS As String = "設定"
 Public Const SHEET_CHATLOG As String = "チャットログ"
-Public Const SHEET_OPS As String = "操作"
+Public Const SHEET_OPS As String = "ホーム"
 Public Const SHEET_MODELS As String = "モデル一覧"
 
 Private Const ROW_PROVIDER As Long = 2
@@ -19,6 +19,16 @@ Private Const ROW_ANTHROPIC_VERSION As Long = 10
 
 Public Function GetSettingValue(ByVal labelRow As Long) As String
     GetSettingValue = Trim$(CStr(ThisWorkbook.Worksheets(SHEET_SETTINGS).Cells(labelRow, 2).Value))
+End Function
+
+Public Function GetOpsSheet() As Worksheet
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(SHEET_OPS)
+    If ws Is Nothing Then Set ws = ThisWorkbook.Worksheets("操作")
+    On Error GoTo 0
+    If ws Is Nothing Then Err.Raise vbObjectError + 3001, "ExcelAI", "ホームシートが見つかりません"
+    Set GetOpsSheet = ws
 End Function
 
 Public Sub SetSettingValue(ByVal labelRow As Long, ByVal value As String)
@@ -135,6 +145,20 @@ Public Sub OpenWorkspaceFolder()
     Shell "explorer.exe """ & GetWorkspacePath() & """", vbNormalFocus
 End Sub
 
+Public Sub RegisterShortcuts()
+    On Error Resume Next
+    Application.OnKey "^~", "RunSheetPrompt"
+    Application.OnKey "^+e", "ShowHome"
+    On Error GoTo 0
+End Sub
+
+Public Sub UnregisterShortcuts()
+    On Error Resume Next
+    Application.OnKey "^~"
+    Application.OnKey "^+e"
+    On Error GoTo 0
+End Sub
+
 Public Sub PickWorkspaceFolder()
     Dim picker As Object
     Set picker = Application.FileDialog(4)
@@ -144,6 +168,7 @@ Public Sub PickWorkspaceFolder()
     If picker.SelectedItems.Count = 0 Then Exit Sub
 
     SetSettingValue ROW_WORKSPACE, CStr(picker.SelectedItems(1))
+    RefreshHomeStatus
     Ops_WriteStatus "Workspace updated: " & GetWorkspacePath(), False
     MsgBox "Workspace updated:" & vbCrLf & GetWorkspacePath(), vbInformation, "ExcelAI"
 End Sub
@@ -153,11 +178,9 @@ Public Sub TestConnection()
     Dim result As String
     result = LLM_TestConnection()
     Ops_WriteStatus result, False
-    MsgBox result, vbInformation, "接続テスト"
     Exit Sub
 ErrHandler:
     Ops_WriteStatus "接続失敗: " & Err.Description, True
-    MsgBox "接続テスト失敗: " & Err.Description, vbCritical
 End Sub
 
 Public Sub RefreshModels()
@@ -174,17 +197,26 @@ Public Sub ClearChatLog()
     Set ws = ThisWorkbook.Worksheets(SHEET_CHATLOG)
     If MsgBox("チャットログをクリアしますか？", vbYesNo + vbQuestion) = vbYes Then
         ws.Rows("2:" & ws.Rows.Count).ClearContents
+        GetOpsSheet().Range("B21").ClearContents
+        Ops_WriteProgress "ログと結果をクリアしました", False
     End If
 End Sub
 
 Public Sub Ops_WriteStatus(ByVal message As String, ByVal isError As Boolean)
     Dim ws As Worksheet
-    Set ws = ThisWorkbook.Worksheets(SHEET_OPS)
-    ws.Range("B14").Value = Format(Now, "yyyy-mm-dd hh:nn:ss")
-    ws.Range("B15").Value = message
+    Set ws = GetOpsSheet()
+    ws.Range("B21").Value = message
+    ws.Range("B21").Font.Color = IIf(isError, RGB(192, 0, 0), RGB(0, 97, 0))
+    Ops_WriteProgress IIf(isError, "エラー", "完了"), isError
+End Sub
+
+Public Sub Ops_WriteProgress(ByVal message As String, ByVal isError As Boolean)
+    Dim ws As Worksheet
+    Set ws = GetOpsSheet()
+    ws.Range("B17").Value = Format(Now, "yyyy-mm-dd hh:nn:ss") & "  " & message
     If isError Then
-        ws.Range("B15").Font.Color = RGB(192, 0, 0)
+        ws.Range("B17").Font.Color = RGB(192, 0, 0)
     Else
-        ws.Range("B15").Font.Color = RGB(0, 97, 0)
+        ws.Range("B17").Font.Color = RGB(0, 97, 0)
     End If
 End Sub
