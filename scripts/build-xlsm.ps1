@@ -38,6 +38,11 @@ try {
         $backupPath = Join-Path $root ("ExcelAI.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss") + ".xlsm")
         Copy-Item $xlsmPath $backupPath
         Remove-Item $xlsmPath -Force
+        # keep only the 3 most recent backups
+        Get-ChildItem -Path $root -Filter 'ExcelAI.backup-*.xlsm' |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -Skip 3 |
+            Remove-Item -Force
     }
     $wb = $excel.Workbooks.Add()
 
