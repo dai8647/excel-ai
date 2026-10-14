@@ -2,6 +2,9 @@ Attribute VB_Name = "modTools"
 Option Explicit
 
 Public Function Tools_GetDefinitionsJson() As String
+    Dim extra As String
+    extra = Skills_ToolDefsOpenAI() & Plugins_ToolsOpenAI()
+    If Len(extra) > 0 Then extra = "," & extra
     Tools_GetDefinitionsJson = "[" & _
         ToolDef("list_dir", "List files and folders in a directory", "{""path"":{""type"":""string"",""description"":""Relative or absolute path within workspace""},""recursive"":{""type"":""boolean"",""description"":""Recurse into subfolders up to 3 levels (capped at 400 lines)""}}") & "," & _
         ToolDef("read_file", "Read a text file in pages (default 100KB; use max_chars and start_chars for larger files)", "{""path"":{""type"":""string""},""max_chars"":{""type"":""integer"",""description"":""1000-200000 characters""},""start_chars"":{""type"":""integer"",""description"":""Character offset for paging""}}") & "," & _
@@ -19,10 +22,13 @@ Public Function Tools_GetDefinitionsJson() As String
         ToolDef("copy_file", "Deep-copy a file or folder to a new path inside the workspace", "{""source"":{""type"":""string""},""destination"":{""type"":""string""}}") & "," & _
         ToolDef("open_file", "Open a workspace file in its default application so the user can see the result", "{""path"":{""type"":""string""}}") & "," & _
         ToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & _
-        "]"
+        extra & "]"
 End Function
 
 Public Function Tools_GetAnthropicDefinitionsJson() As String
+    Dim extra As String
+    extra = Skills_ToolDefsAnthropic() & Plugins_ToolsAnthropic()
+    If Len(extra) > 0 Then extra = "," & extra
     Tools_GetAnthropicDefinitionsJson = "[" & _
         AnthropicToolDef("list_dir", "List files and folders in a directory", "{""path"":{""type"":""string"",""description"":""Relative or absolute path within workspace""}}") & "," & _
         AnthropicToolDef("read_file", "Read a text file in pages (default 100KB; use max_chars and start_chars for larger files)", "{""path"":{""type"":""string""},""max_chars"":{""type"":""integer"",""description"":""1000-200000 characters""},""start_chars"":{""type"":""integer"",""description"":""Character offset for paging""}}") & "," & _
@@ -39,17 +45,17 @@ Public Function Tools_GetAnthropicDefinitionsJson() As String
         AnthropicToolDef("make_dir", "Create a folder inside the workspace (parents created too)", "{""path"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("copy_file", "Deep-copy a file or folder to a new path inside the workspace", "{""source"":{""type"":""string""},""destination"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("open_file", "Open a safe file in its default application", "{""path"":{""type"":""string""}}") & "," & _
-        AnthropicToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & "]"
+        AnthropicToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & extra & "]"
 End Function
 
-Private Function ToolDef(ByVal name As String, ByVal description As String, ByVal params As String) As String
+Public Function ToolDef(ByVal name As String, ByVal description As String, ByVal params As String) As String
     ToolDef = "{""type"":""function"",""function"":{" & _
         """name"":" & JsonString(name) & "," & _
         """description"":" & JsonString(description) & "," & _
         """parameters"":{""type"":""object"",""properties"":" & params & "}}}"
 End Function
 
-Private Function AnthropicToolDef(ByVal name As String, ByVal description As String, ByVal params As String) As String
+Public Function AnthropicToolDef(ByVal name As String, ByVal description As String, ByVal params As String) As String
     AnthropicToolDef = "{""name"":" & JsonString(name) & ",""description"":" & JsonString(description) & _
         ",""input_schema"":{""type"":""object"",""properties"":" & params & "}}"
 End Function
@@ -137,6 +143,11 @@ Public Function Tools_Execute(ByVal toolName As String, ByVal argsJson As String
         Case "web_fetch"
             Tools_Execute = Tool_WebFetch(JsonGetArg(argsJson, "url"), JsonGetArg(argsJson, "max_chars"))
         Case Else
+            Dim handled As Boolean
+            Tools_Execute = Skills_TryExecute(toolName, argsJson, autoApproved, handled)
+            If handled Then Exit Function
+            Tools_Execute = Plugins_TryExecute(toolName, argsJson, autoApproved, handled)
+            If handled Then Exit Function
             Tools_Execute = "未知のツール: " & toolName
     End Select
     Exit Function
@@ -150,20 +161,38 @@ Private Function ConfirmToolAction(ByVal toolName As String, ByVal argsJson As S
         "実行しますか？", vbYesNo + vbQuestion, "ExcelAI") = vbYes)
 End Function
 
-Private Function ApproveWriteTool(ByVal toolName As String, ByVal argsJson As String, ByRef autoApproved As Boolean) As Boolean
+Public Function ApproveWriteTool(ByVal toolName As String, ByVal argsJson As String, ByRef autoApproved As Boolean) As Boolean
     If autoApproved Or IsAutoRunEnabled() Then
         autoApproved = True
         ApproveWriteTool = True
+        FireBeforeWriteHook argsJson
         Exit Function
     End If
 
     If ConfirmToolAction(toolName, argsJson) Then
         autoApproved = True
         ApproveWriteTool = True
+        FireBeforeWriteHook argsJson
     Else
         ApproveWriteTool = False
     End If
 End Function
+
+' Optional plugin hook: notify plugins before a gated write touches a path.
+' Extracts the write target from the tool arguments; unresolvable paths are skipped.
+Public Sub FireBeforeWriteHook(ByVal argsJson As String)
+    Dim candidate As String
+    Dim resolved As String
+
+    candidate = JsonGetArg(argsJson, "path")
+    If Len(candidate) = 0 Then candidate = JsonGetArg(argsJson, "source")
+    If Len(candidate) = 0 Then Exit Sub
+    On Error Resume Next
+    resolved = ResolveSafePath(candidate)
+    On Error GoTo 0
+    If Len(resolved) = 0 Then Exit Sub
+    Plugins_FireBeforeWrite resolved
+End Sub
 
 Private Function Tool_ListDir(ByVal path As String, ByVal recursiveText As String) As String
     Dim fso As Object

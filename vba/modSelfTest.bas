@@ -15,14 +15,15 @@ Public Function SelfTest_Run() As String
     m_Fail = 0
     m_Fails = ""
 
-    Test_PathGuard
-    Test_Json
-    Test_Session
-    Test_Trim
-    Test_Settings
-    Test_ToolDefs
-    Test_ToolExec
-    Test_AllModulesCompile
+    SafeRun "Test_PathGuard"
+    SafeRun "Test_Json"
+    SafeRun "Test_Session"
+    SafeRun "Test_Trim"
+    SafeRun "Test_Settings"
+    SafeRun "Test_ToolDefs"
+    SafeRun "Test_ToolExec"
+    SafeRun "Test_PluginsSkills"
+    SafeRun "Test_AllModulesCompile"
 
     ChatLog_Write "system", "SelfTest: " & m_Pass & " pass / " & m_Fail & " fail"
     If m_Fail = 0 Then
@@ -31,6 +32,17 @@ Public Function SelfTest_Run() As String
         SelfTest_Run = "SelfTest: " & m_Pass & " PASS / " & m_Fail & " FAIL -> " & m_Fails
     End If
 End Function
+
+' Run a test sub without ever letting a runtime error surface as a modal
+' VBA dialog (which would hang COM automation forever). A crash becomes a FAIL.
+Private Sub SafeRun(ByVal testSubName As String)
+    On Error GoTo Handler
+    Application.Run "'" & ThisWorkbook.Name & "'!" & testSubName
+    Exit Sub
+Handler:
+    Check "crash@" & testSubName & " (" & Err.Number & ": " & Err.Description & ")", False
+    Err.Clear
+End Sub
 
 Private Sub Check(ByVal name As String, ByVal ok As Boolean)
     If ok Then
@@ -50,7 +62,7 @@ Private Function Rejects(ByVal inputPath As String) As Boolean
     On Error GoTo 0
 End Function
 
-Private Sub Test_PathGuard()
+Public Sub Test_PathGuard()
     Dim resolved As String
     resolved = ResolveSafePath("README.txt")
     Check "guard-inside", IsPathInWorkspace(resolved)
@@ -58,7 +70,7 @@ Private Sub Test_PathGuard()
     Check "guard-outside-blocked", Rejects("C:\Windows")
 End Sub
 
-Private Sub Test_Json()
+Public Sub Test_Json()
     Dim j As String, back As String
     j = JsonBuildUserMessage("hello ""quote"" 自己テスト" & vbLf & "line2")
     back = JsonExtractString(j, "content")
@@ -94,7 +106,7 @@ Private Sub Test_Json()
     Check "json-hasnull-true", JsonHasToolCalls("{""choices"":[{""message"":{""content"":null,""tool_calls"": [{""id"":""a""}]}}]}")
 End Sub
 
-Private Sub Test_Session()
+Public Sub Test_Session()
     Dim items As Collection
 
     Session_Reset
@@ -126,7 +138,7 @@ Private Sub Test_Session()
     Session_Reset
 End Sub
 
-Private Sub Test_Trim()
+Public Sub Test_Trim()
     Dim hist As New Collection
     Dim i As Long
     Dim role As String
@@ -142,12 +154,12 @@ Private Sub Test_Trim()
     Check "trim-safe-boundary", JsonExtractString(CStr(tr(2)), "role") = "user"
 End Sub
 
-Private Sub Test_Settings()
+Public Sub Test_Settings()
     InitDefaultSettings
     Check "settings-maxtokens", GetMaxTokens() >= 256
 End Sub
 
-Private Sub Test_ToolDefs()
+Public Sub Test_ToolDefs()
     Dim oai As String, ant As String
     oai = Tools_GetDefinitionsJson()
     ant = Tools_GetAnthropicDefinitionsJson()
@@ -155,7 +167,7 @@ Private Sub Test_ToolDefs()
     Check "tooldefs-anthropic", InStr(ant, "create_chart") > 0 And InStr(ant, "update_excel") > 0
 End Sub
 
-Private Sub Test_ToolExec()
+Public Sub Test_ToolExec()
     Dim auto As Boolean
     Dim res As String
     Dim fso As Object
@@ -190,7 +202,103 @@ Private Sub Test_ToolExec()
     On Error GoTo 0
 End Sub
 
-Private Sub Test_AllModulesCompile()
+Public Function SelfTest_SkillTarget(ByVal argsJson As String) As String
+    SelfTest_SkillTarget = "skill-ran:" & Left$(argsJson, 40)
+End Function
+
+Public Sub Test_PluginsSkills()
+    Dim defs As String
+    Dim aa As Boolean
+    Dim handled As Boolean
+    Dim r As String
+    Dim ws As Worksheet
+    Dim rTest As Long
+
+    ' ---- plugin contract via the reference Plugin_Echo ----
+    defs = Tools_GetDefinitionsJson()
+    Check "plugin-defs-openai", InStr(defs, "echo_last_write") > 0
+    Check "plugin-defs-anthropic", InStr(Tools_GetAnthropicDefinitionsJson(), "echo_last_write") > 0
+    Check "plugin-registered", InStr(Plugins_List(), "Plugin_Echo") > 0
+
+    r = Plugins_TryExecute("echo", "{""text"":""ping-selftest""}", aa, handled)
+    Check "plugin-exec", handled And r = "ping-selftest"
+    aa = False
+    r = Tools_Execute("echo", "{""text"":""via-dispatch""}", aa)
+    Check "plugin-dispatch", InStr(r, "via-dispatch") > 0
+    aa = False
+    r = Tools_Execute("no_such_tool_xyz", "{}", aa)
+    Check "unknown-tool-still-errors", InStr(r, "unknown") > 0 Or InStr(r, "未知") > 0
+
+    ' Every enabled plugin may expose Plugin_SelfTest(): returning "OK" passes,
+    ' returning "" is skipped, anything else fails the harness with that text.
+    Dim mods As Collection
+    Dim mi As Variant
+    Dim plugTest As String
+    Set mods = Plugins_EnabledModules()
+    For Each mi In mods
+        plugTest = ""
+        On Error Resume Next
+        plugTest = Application.Run(CStr(mi) & ".Plugin_SelfTest")
+        If Err.Number <> 0 Then plugTest = ""
+        Err.Clear
+        On Error GoTo 0
+        If plugTest = "OK" Then
+            Check "plugin-selftest:" & CStr(mi), True
+        ElseIf Len(plugTest) > 0 Then
+            Check "plugin-selftest:" & CStr(mi) & " -> " & Left$(plugTest, 120), False
+        End If
+    Next mi
+
+    ' OnBeforeWrite hook: an approved write_file must notify Plugin_Echo
+    Plugin_Echo.LastWritePath = ""
+    aa = True
+    r = Tools_Execute("write_file", "{""path"":""selftest_plugin.txt"",""content"":""x""}", aa)
+    Check "plugin-before-write-hook", InStr(Plugin_Echo.LastWritePath, "selftest_plugin.txt") > 0
+    On Error Resume Next
+    Kill GetWorkspacePath() & "\selftest_plugin.txt"
+    On Error GoTo 0
+
+    ' ---- user skills on the skills sheet ----
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(SHEET_SKILLS)
+    On Error GoTo 0
+    Check "skills-sheet-exists", Not ws Is Nothing
+    If ws Is Nothing Then Exit Sub
+
+    rTest = 8
+    ws.Cells(rTest, 1).Value = "selftest-skill"
+    ws.Cells(rTest, 2).Value = "vba"
+    ws.Cells(rTest, 3).Value = "selftest vba skill"
+    ws.Cells(rTest, 4).Value = "SelfTest_SkillTarget"
+    ws.Cells(rTest, 6).Value = "no"
+    ws.Cells(rTest, 7).Value = "yes"
+    Check "skill-def-in-both-providers", _
+        InStr(Tools_GetDefinitionsJson(), "vba_selftest_skill") > 0 And _
+        InStr(Tools_GetAnthropicDefinitionsJson(), "vba_selftest_skill") > 0
+
+    handled = False
+    r = Skills_TryExecute("vba_selftest_skill", "{""a"":1}", aa, handled)
+    Check "skill-vba-exec", handled And InStr(r, "skill-ran:") > 0
+
+    ' prompt skills are injected into the system prompt only while enabled
+    ws.Cells(rTest + 1, 1).Value = "selftest-prompt"
+    ws.Cells(rTest + 1, 2).Value = "prompt"
+    ws.Cells(rTest + 1, 3).Value = "selftest prompt skill"
+    ws.Cells(rTest + 1, 4).Value = "SAY_TESTPHRASE_XYZZY"
+    ws.Cells(rTest + 1, 7).Value = "yes"
+    Check "skill-prompt-injected", InStr(BuildSystemPrompt(), "SAY_TESTPHRASE_XYZZY") > 0
+
+    ws.Cells(rTest, 7).Value = "no"
+    ws.Cells(rTest + 1, 7).Value = "no"
+    Check "skill-disable-hides-prompt", InStr(BuildSystemPrompt(), "SAY_TESTPHRASE_XYZZY") = 0
+
+    Dim rr As Long
+    For rr = rTest To rTest + 1
+        ws.Rows(rr).ClearContents
+    Next rr
+End Sub
+
+Public Sub Test_AllModulesCompile()
     Dim s As String
     s = GetProvider()                  ' modSettings
     s = s & BuildSystemPrompt()        ' modLLM

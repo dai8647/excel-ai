@@ -27,6 +27,8 @@ OpenClaude の「ツールループ + プロバイダ切替 + サンドボック
 - 既存xlsx/xlsm/xlsb/xlsの構造・シート・数式の読み取り
 - 公開Webページ・APIレスポンスの取得（読み取り専用 `web_fetch`）
 - 自動実行 ON/OFF（設定で切替）
+- **スキル** — 「スキル」シートに1行書くだけで手順定義（prompt型）や自作VBA関数（vba型）をツールとして追加できる（再ビルド不要）
+- **プラグイン** — `vba/plugins/Plugin_*.bas` を置くだけでツール一式を追加・配布できる（[docs/SKILLS_PLUGINS.md](docs/SKILLS_PLUGINS.md)）
 - ホーム画面、Ctrl+Enter実行、処理進行状況の表示
 - 操作ログ（監査用）
 
@@ -37,7 +39,8 @@ OpenClaude の「ツールループ + プロバイダ切替 + サンドボック
 ├── ExcelAI.xlsm          ← 配布物（build-xlsm.ps1 で生成）
 ├── .excelai-session.json ← 会話履歴（自動生成・配布前に削除）
 ├── vba/                  ← VBA ソース（インポート用）
-├── scripts/              ← build-xlsm.ps1（xlsm 生成）
+│   └── plugins/          ← プラグイン（Plugin_*.bas を置くだけ）
+├── scripts/              ← build-xlsm.ps1（xlsm 生成）・ selftest.ps1
 ├── workspace/            ← デフォルト作業場所（AI の作業範囲）
 └── docs/                 ← セットアップ・シート構成
 ```

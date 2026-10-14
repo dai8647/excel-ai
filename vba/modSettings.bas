@@ -1,11 +1,13 @@
 Attribute VB_Name = "modSettings"
 Option Explicit
 
-Public Const APP_VERSION As String = "1.4.0"
+Public Const APP_VERSION As String = "1.5.0"
 Public Const SHEET_SETTINGS As String = "設定"
 Public Const SHEET_CHATLOG As String = "チャットログ"
 Public Const SHEET_OPS As String = "ホーム"
 Public Const SHEET_MODELS As String = "モデル一覧"
+Public Const SHEET_SKILLS As String = "スキル"
+Public Const SHEET_PLUGINS As String = "プラグイン"
 
 Private Const ROW_PROVIDER As Long = 2
 Private Const ROW_API_KEY As Long = 3

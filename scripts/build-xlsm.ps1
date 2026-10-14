@@ -46,7 +46,7 @@ try {
     }
     $wb = $excel.Workbooks.Add()
 
-    while (($wb.Worksheets.Count) -lt 5) {
+    while (($wb.Worksheets.Count) -lt 7) {
         $wb.Worksheets.Add() | Out-Null
     }
 
@@ -55,6 +55,8 @@ try {
     $wb.Worksheets.Item(3).Name = -join @([char]0x30DB, [char]0x30FC, [char]0x30E0)
     $wb.Worksheets.Item(4).Name = -join @([char]0x30C1, [char]0x30E3, [char]0x30C3, [char]0x30C8, [char]0x30ED, [char]0x30B0)
     $wb.Worksheets.Item(5).Name = -join @([char]0x30E2, [char]0x30C7, [char]0x30EB, [char]0x4E00, [char]0x89A7)
+    $wb.Worksheets.Item(6).Name = -join @([char]0x30B9, [char]0x30AD, [char]0x30EB)
+    $wb.Worksheets.Item(7).Name = -join @([char]0x30D7, [char]0x30E9, [char]0x30B0, [char]0x30A4, [char]0x30F3)
 
     $readme = $wb.Worksheets.Item(1)
     $readme.Tab.Color = 5296274
@@ -270,6 +272,39 @@ try {
     }
     catch { }
 
+    $skills = $wb.Worksheets.Item(6)
+    $skills.Tab.Color = $green
+    $skills.Cells.Item(1, 1).Value2 = "Skill name"; $skills.Cells.Item(1, 2).Value2 = "Type (prompt/vba)"; $skills.Cells.Item(1, 3).Value2 = "Description"
+    $skills.Cells.Item(1, 4).Value2 = "Body (prompt) / VBA function name (vba)"; $skills.Cells.Item(1, 5).Value2 = "Params JSON (vba only, optional)"
+    $skills.Cells.Item(1, 6).Value2 = "Write gate (yes/no)"; $skills.Cells.Item(1, 7).Value2 = "Enabled (yes/no)"
+    $skills.Range("A1:G1").Interior.Color = $navy; $skills.Range("A1:G1").Font.Color = $white; $skills.Range("A1:G1").Font.Bold = $true
+    $skills.Columns.Item("A").ColumnWidth = 20; $skills.Columns.Item("B").ColumnWidth = 14; $skills.Columns.Item("C").ColumnWidth = 42
+    $skills.Columns.Item("D").ColumnWidth = 60; $skills.Columns.Item("E").ColumnWidth = 30; $skills.Columns.Item("F").ColumnWidth = 12; $skills.Columns.Item("G").ColumnWidth = 12
+    $skills.Rows.Item(1).RowHeight = 30
+    $skills.Cells.Item(2, 1).Value2 = "polite-report"; $skills.Cells.Item(2, 2).Value2 = "prompt"
+    $skills.Cells.Item(2, 3).Value2 = "sample: reply with a short Japanese business report"
+    $skills.Cells.Item(2, 4).Value2 = "Respond with a short formal Japanese report format: title, summary, next actions."
+    $skills.Cells.Item(2, 6).Value2 = "no"; $skills.Cells.Item(2, 7).Value2 = "no"
+    $skills.Cells.Item(4, 1).Value2 = "see docs/SKILLS_PLUGINS.md for the full contract"
+    $skills.Cells.Item(4, 1).Font.Color = $muted
+
+    $pluginsSheet = $wb.Worksheets.Item(7)
+    $pluginsSheet.Tab.Color = $muted
+    $pluginsSheet.Cells.Item(1, 1).Value2 = "Module"; $pluginsSheet.Cells.Item(1, 2).Value2 = "Enabled (yes/no)"; $pluginsSheet.Cells.Item(1, 3).Value2 = "Loaded at build"
+    $pluginsSheet.Range("A1:C1").Interior.Color = $navy; $pluginsSheet.Range("A1:C1").Font.Color = $white; $pluginsSheet.Range("A1:C1").Font.Bold = $true
+    $pluginsSheet.Columns.Item("A").ColumnWidth = 28; $pluginsSheet.Columns.Item("B").ColumnWidth = 16; $pluginsSheet.Columns.Item("C").ColumnWidth = 16
+    $pluginRow = 2
+    $pluginsSrc = Join-Path $vbaDir "plugins"
+    if (Test-Path $pluginsSrc) {
+        Get-ChildItem (Join-Path $pluginsSrc "*.bas") | ForEach-Object {
+            $pluginsSheet.Cells.Item($pluginRow, 1).Value2 = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
+            $pluginsSheet.Cells.Item($pluginRow, 2).Value2 = "yes"
+            $pluginsSheet.Cells.Item($pluginRow, 3).Value2 = "yes"
+            $pluginRow += 1
+        }
+    }
+    $pluginsSheet.Visible = 0
+
     $vbProj = $wb.VBProject
     $importRoot = Join-Path $env:TEMP "ExcelAI-vba-import"
     if (Test-Path $importRoot) { Remove-Item $importRoot -Recurse -Force }
@@ -282,6 +317,17 @@ try {
         $moduleComponent = $vbProj.VBComponents.Add(1)
         $moduleComponent.Name = $moduleName
         $moduleComponent.CodeModule.AddFromString($moduleCode)
+    }
+    $pluginsImport = Join-Path $importRoot "plugins"
+    if (Test-Path $pluginsImport) {
+        Get-ChildItem (Join-Path $pluginsImport "*.bas") | ForEach-Object {
+            $moduleCode = Get-Content $_.FullName -Raw -Encoding UTF8
+            $moduleCode = $moduleCode -replace "(?m)^Attribute[^\r\n]*\r?\n", ""
+            $moduleName = [System.IO.Path]::GetFileNameWithoutExtension($_.Name)
+            $moduleComponent = $vbProj.VBComponents.Add(1)
+            $moduleComponent.Name = $moduleName
+            $moduleComponent.CodeModule.AddFromString($moduleCode)
+        }
     }
     $frm = Join-Path $importRoot "frmAgent.frm"
     if ($false -and (Test-Path $frm)) {
@@ -330,8 +376,10 @@ try {
     }
 
     foreach ($sheet in $wb.Worksheets) {
-        $sheet.Activate()
-        try { $excel.ActiveWindow.DisplayGridlines = $false; $excel.ActiveWindow.Zoom = 90 } catch { }
+        try {
+            $sheet.Activate()
+            $excel.ActiveWindow.DisplayGridlines = $false; $excel.ActiveWindow.Zoom = 90
+        } catch { }
     }
     $readme.Activate()
     $wb.SaveAs($xlsmPath, 52)
