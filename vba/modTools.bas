@@ -3,7 +3,7 @@ Option Explicit
 
 Public Function Tools_GetDefinitionsJson() As String
     Tools_GetDefinitionsJson = "[" & _
-        ToolDef("list_dir", "List files and folders in a directory", "{""path"":{""type"":""string"",""description"":""Relative or absolute path within workspace""}}") & "," & _
+        ToolDef("list_dir", "List files and folders in a directory", "{""path"":{""type"":""string"",""description"":""Relative or absolute path within workspace""},""recursive"":{""type"":""boolean"",""description"":""Recurse into subfolders up to 3 levels (capped at 400 lines)""}}") & "," & _
         ToolDef("read_file", "Read a text file in pages (default 100KB; use max_chars and start_chars for larger files)", "{""path"":{""type"":""string""},""max_chars"":{""type"":""integer"",""description"":""1000-200000 characters""},""start_chars"":{""type"":""integer"",""description"":""Character offset for paging""}}") & "," & _
         ToolDef("write_file", "Write or overwrite a text file", "{""path"":{""type"":""string""},""content"":{""type"":""string""}}") & "," & _
         ToolDef("append_file", "Append text to a file", "{""path"":{""type"":""string""},""content"":{""type"":""string""}}") & "," & _
@@ -14,6 +14,10 @@ Public Function Tools_GetDefinitionsJson() As String
         ToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string"",""description"":""Existing .xlsx or .xlsm path""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string"",""description"":""Source range such as A1:D4""},""chart_type"":{""type"":""string"",""description"":""column, bar, line, or pie""},""title"":{""type"":""string""}}") & "," & _
         ToolDef("inspect_excel", "Inspect an .xlsx/.xlsm workbook without reading its binary contents", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string"",""description"":""Optional sheet name""},""include_formulas"":{""type"":""boolean"",""description"":""Include formulas in the sample""}}") & "," & _
         ToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "," & _
+        ToolDef("update_excel", "Add a sheet to an existing .xlsx/.xlsm and write values or formulas. Either csv_content (CSV block starting at start_cell) or edits (newline-separated CELL=VALUE lines). Values starting with = become formulas.", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""new_sheet"":{""type"":""string"",""description"":""Optional: create this sheet if missing and write into it""},""start_cell"":{""type"":""string"",""description"":""Top-left cell for csv_content, default A1""},""csv_content"":{""type"":""string""},""edits"":{""type"":""string"",""description"":""Lines like B2==SUM(B2:B9) or Name=apple, max 500""}}") & "," & _
+        ToolDef("make_dir", "Create a folder inside the workspace (parents created too)", "{""path"":{""type"":""string""}}") & "," & _
+        ToolDef("copy_file", "Deep-copy a file or folder to a new path inside the workspace", "{""source"":{""type"":""string""},""destination"":{""type"":""string""}}") & "," & _
+        ToolDef("open_file", "Open a workspace file in its default application so the user can see the result", "{""path"":{""type"":""string""}}") & "," & _
         ToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & _
         "]"
 End Function
@@ -31,6 +35,10 @@ Public Function Tools_GetAnthropicDefinitionsJson() As String
         AnthropicToolDef("create_chart", "Add a chart to an existing Excel workbook", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""source_range"":{""type"":""string""},""chart_type"":{""type"":""string""},""title"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("inspect_excel", "Inspect an .xlsx/.xlsm workbook without reading its binary contents", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""include_formulas"":{""type"":""boolean""}}") & "," & _
         AnthropicToolDef("grep_files", "Search for text in files under a folder", "{""folder"":{""type"":""string""},""pattern"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("update_excel", "Add a sheet to an existing .xlsx/.xlsm and write values or formulas. Either csv_content (CSV block starting at start_cell) or edits (newline-separated CELL=VALUE lines). Values starting with = become formulas.", "{""path"":{""type"":""string""},""sheet_name"":{""type"":""string""},""new_sheet"":{""type"":""string""},""start_cell"":{""type"":""string""},""csv_content"":{""type"":""string""},""edits"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("make_dir", "Create a folder inside the workspace (parents created too)", "{""path"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("copy_file", "Deep-copy a file or folder to a new path inside the workspace", "{""source"":{""type"":""string""},""destination"":{""type"":""string""}}") & "," & _
+        AnthropicToolDef("open_file", "Open a safe file in its default application", "{""path"":{""type"":""string""}}") & "," & _
         AnthropicToolDef("web_fetch", "Fetch a public web page or API response as text (GET only; private and local addresses are blocked)", "{""url"":{""type"":""string"",""description"":""Public http(s) URL""},""max_chars"":{""type"":""integer"",""description"":""Maximum returned characters, 1000-50000""}}") & "]"
 End Function
 
@@ -51,7 +59,7 @@ Public Function Tools_Execute(ByVal toolName As String, ByVal argsJson As String
 
     Select Case LCase$(toolName)
         Case "list_dir"
-            Tools_Execute = Tool_ListDir(JsonGetArg(argsJson, "path"))
+            Tools_Execute = Tool_ListDir(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "recursive"))
         Case "read_file"
             Tools_Execute = Tool_ReadFile(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "max_chars"), JsonGetArg(argsJson, "start_chars"))
         Case "write_file"
@@ -104,6 +112,26 @@ Public Function Tools_Execute(ByVal toolName As String, ByVal argsJson As String
             Tools_Execute = Tool_CreateChart(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "source_range"), JsonGetArg(argsJson, "chart_type"), JsonGetArg(argsJson, "title"))
         Case "inspect_excel"
             Tools_Execute = Tool_InspectExcel(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "include_formulas"))
+        Case "update_excel"
+            If Not ApproveWriteTool("update_excel", argsJson, autoApproved) Then
+                    Tools_Execute = "ユーザーが実行をキャンセルしました"
+                    Exit Function
+            End If
+            Tools_Execute = Tool_UpdateExcel(JsonGetArg(argsJson, "path"), JsonGetArg(argsJson, "sheet_name"), JsonGetArg(argsJson, "new_sheet"), JsonGetArg(argsJson, "start_cell"), JsonGetArg(argsJson, "csv_content"), JsonGetArg(argsJson, "edits"))
+        Case "make_dir"
+            If Not ApproveWriteTool("make_dir", argsJson, autoApproved) Then
+                    Tools_Execute = "ユーザーが実行をキャンセルしました"
+                    Exit Function
+            End If
+            Tools_Execute = Tool_MakeDir(JsonGetArg(argsJson, "path"))
+        Case "copy_file"
+            If Not ApproveWriteTool("copy_file", argsJson, autoApproved) Then
+                    Tools_Execute = "ユーザーが実行をキャンセルしました"
+                    Exit Function
+            End If
+            Tools_Execute = Tool_CopyFile(JsonGetArg(argsJson, "source"), JsonGetArg(argsJson, "destination"))
+        Case "open_file"
+            Tools_Execute = Tool_OpenFile(JsonGetArg(argsJson, "path"))
         Case "grep_files"
             Tools_Execute = Tool_GrepFiles(JsonGetArg(argsJson, "folder"), JsonGetArg(argsJson, "pattern"))
         Case "web_fetch"
@@ -137,12 +165,12 @@ Private Function ApproveWriteTool(ByVal toolName As String, ByVal argsJson As St
     End If
 End Function
 
-Private Function Tool_ListDir(ByVal path As String) As String
+Private Function Tool_ListDir(ByVal path As String, ByVal recursiveText As String) As String
     Dim fso As Object
     Dim safePath As String
-    Dim entry As String
-    Dim fullPath As String
     Dim result As String
+    Dim count As Long
+    Dim recursive As Boolean
 
     Set fso = CreateObject("Scripting.FileSystemObject")
     If Len(path) = 0 Then path = "."
@@ -153,21 +181,203 @@ Private Function Tool_ListDir(ByVal path As String) As String
         Exit Function
     End If
 
-    entry = Dir$(safePath & "\*", vbNormal Or vbHidden Or vbSystem Or vbDirectory)
-    Do While Len(entry) > 0
-        If entry <> "." And entry <> ".." Then
-            fullPath = safePath & "\" & entry
-            If (GetAttr(fullPath) And vbDirectory) = vbDirectory Then
-                result = result & "[DIR]  " & entry & vbCrLf
-            Else
-                result = result & "[FILE] " & entry & " (" & FileLen(fullPath) & " bytes)" & vbCrLf
-            End If
-        End If
-        entry = Dir$()
-    Loop
+    recursive = (LCase$(Trim$(recursiveText)) = "true" Or LCase$(Trim$(recursiveText)) = "1" Or Trim$(recursiveText) = "はい")
+    If recursive Then
+        ' FSO-based walk: Dir$ is a single shared cursor and cannot nest.
+        ListFolderRecursive fso, safePath, "", result, count, 1
+        Tool_ListDir = result
+        Exit Function
+    End If
+
+    ListFolderFlat fso, safePath, "", result, count
 
     If Len(result) = 0 Then result = "(空のフォルダ)"
     Tool_ListDir = result
+End Function
+
+Private Sub ListFolderFlat(ByVal fso As Object, ByVal folderPath As String, ByVal indent As String, ByRef result As String, ByRef count As Long)
+    Dim sub_ As Object
+    Dim f As Object
+    For Each sub_ In fso.GetFolder(folderPath).SubFolders
+        result = result & indent & "[DIR]  " & sub_.Name & vbCrLf
+        count = count + 1
+    Next sub_
+    For Each f In fso.GetFolder(folderPath).Files
+        result = result & indent & "[FILE] " & f.Name & " (" & f.Size & " bytes)" & vbCrLf
+        count = count + 1
+    Next f
+End Sub
+
+Private Sub ListFolderRecursive(ByVal fso As Object, ByVal folderPath As String, ByVal indent As String, ByRef result As String, ByRef count As Long, ByVal depth As Long)
+    Dim sub_ As Object
+    Dim f As Object
+
+    If count >= 400 Then Exit Sub
+    For Each sub_ In fso.GetFolder(folderPath).SubFolders
+        If count >= 400 Then Exit Sub
+        result = result & indent & "[DIR]  " & sub_.Name & vbCrLf
+        count = count + 1
+        If depth < 3 Then ListFolderRecursive fso, sub_.Path, indent & "  ", result, count, depth + 1
+    Next sub_
+    For Each f In fso.GetFolder(folderPath).Files
+        If count >= 400 Then Exit Sub
+        result = result & indent & "[FILE] " & f.Name & " (" & f.Size & " bytes)" & vbCrLf
+        count = count + 1
+    Next f
+End Sub
+
+Private Function Tool_MakeDir(ByVal path As String) As String
+    Dim fso As Object
+    Dim safePath As String
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    safePath = ResolveSafePath(path)
+    If fso.FolderExists(safePath) Then
+        Tool_MakeDir = "既に存在します: " & safePath
+        Exit Function
+    End If
+    EnsureFolder fso, safePath
+    Tool_MakeDir = "フォルダ作成完了: " & safePath
+End Function
+
+Private Sub EnsureFolder(ByVal fso As Object, ByVal folderPath As String)
+    Dim parent As String
+    If fso.FolderExists(folderPath) Then Exit Sub
+    parent = fso.GetParentFolderName(folderPath)
+    If Len(parent) > 0 And parent <> folderPath And Not fso.FolderExists(parent) Then
+        EnsureFolder fso, parent
+    End If
+    fso.CreateFolder folderPath
+End Sub
+
+Private Function Tool_CopyFile(ByVal source As String, ByVal destination As String) As String
+    Dim fso As Object
+    Dim srcPath As String
+    Dim dstPath As String
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    srcPath = ResolveSafePath(source)
+    dstPath = ResolveSafePath(destination)
+
+    If fso.FileExists(srcPath) Then
+        fso.CopyFile srcPath, dstPath, True
+        Tool_CopyFile = "コピー完了: " & srcPath & " -> " & dstPath
+    ElseIf fso.FolderExists(srcPath) Then
+        fso.CopyFolder srcPath, dstPath, True
+        Tool_CopyFile = "フォルダコピー完了: " & srcPath & " -> " & dstPath
+    Else
+        Tool_CopyFile = "コピー元が存在しません: " & srcPath
+    End If
+End Function
+
+Private Function Tool_OpenFile(ByVal path As String) As String
+    Dim fso As Object
+    Dim safePath As String
+
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    safePath = ResolveSafePath(path)
+    If Not fso.FileExists(safePath) And Not fso.FolderExists(safePath) Then
+        Tool_OpenFile = "存在しません: " & safePath
+        Exit Function
+    End If
+    Shell "explorer.exe """ & safePath & """", vbNormalFocus
+    Tool_OpenFile = "開きました: " & safePath
+End Function
+
+Private Function Tool_UpdateExcel(ByVal path As String, ByVal sheetName As String, ByVal newSheet As String, ByVal startCell As String, ByVal csvContent As String, ByVal edits As String) As String
+    Dim safePath As String
+    Dim xl As Object
+    Dim wb As Object
+    Dim ws As Object
+    Dim targetCell As Object
+    Dim lines() As String
+    Dim cells() As String
+    Dim eqPos As Long
+    Dim r As Long, c As Long, i As Long
+    Dim editCount As Long
+    Dim rowOff As Long
+    Dim resultText As String
+
+    On Error GoTo ErrHandler
+    safePath = ResolveSafePath(path)
+    If LCase$(Right$(safePath, 5)) <> ".xlsx" And LCase$(Right$(safePath, 5)) <> ".xlsm" Then
+        Err.Raise vbObjectError + 2102, "update_excel", "対象は .xlsx/.xlsm を指定してください"
+    End If
+    If Len(csvContent) = 0 And Len(edits) = 0 Then
+        Err.Raise vbObjectError + 2103, "update_excel", "csv_content か edits のどちらかを指定してください"
+    End If
+    If Len(startCell) = 0 Then startCell = "A1"
+
+    Set xl = CreateObject("Excel.Application")
+    xl.Visible = False
+    xl.DisplayAlerts = False
+    Set wb = xl.Workbooks.Open(safePath)
+
+    If Len(newSheet) > 0 Then
+        On Error Resume Next
+        Set ws = wb.Worksheets(newSheet)
+        On Error GoTo ErrHandler
+        If ws Is Nothing Then
+            Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+            ws.Name = Left$(newSheet, 31)
+        End If
+    ElseIf Len(sheetName) > 0 Then
+        Set ws = wb.Worksheets(sheetName)
+    Else
+        Set ws = wb.Worksheets(1)
+    End If
+
+    If Len(csvContent) > 0 Then
+        Set targetCell = ws.Range(startCell)
+        rowOff = targetCell.Row - 1
+        Dim colOff As Long
+        colOff = targetCell.Column - 1
+        lines = Split(csvContent, vbLf)
+        r = 0
+        For i = LBound(lines) To UBound(lines)
+            Dim line As String
+            line = Replace(lines(i), vbCr, "")
+            If Len(line) > 0 Then
+                cells = Split(line, ",")
+                For c = LBound(cells) To UBound(cells)
+                    ws.Cells(rowOff + r + 1, colOff + c + 1).Value = cells(c)
+                    editCount = editCount + 1
+                Next c
+                r = r + 1
+            End If
+            If editCount >= 50000 Then Exit For
+        Next i
+    End If
+
+    If Len(edits) > 0 Then
+        lines = Split(edits, vbLf)
+        For i = LBound(lines) To UBound(lines)
+            line = Replace(lines(i), vbCr, "")
+            eqPos = InStr(line, "=")
+            If eqPos > 1 Then
+                ws.Range(Trim$(Left$(line, eqPos - 1))).Value = Mid$(line, eqPos + 1)
+                editCount = editCount + 1
+            End If
+            If editCount >= 50000 Then Exit For
+        Next i
+    End If
+
+    wb.Save
+    resultText = "Excel更新完了: " & safePath & " / " & ws.Name & " / " & editCount & " セル"
+    GoTo Cleanup
+
+ErrHandler:
+    resultText = "update_excelエラー: " & Err.Description
+
+Cleanup:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close False
+    If Not xl Is Nothing Then xl.Quit
+    Set targetCell = Nothing
+    Set ws = Nothing
+    Set wb = Nothing
+    Set xl = Nothing
+    Tool_UpdateExcel = resultText
 End Function
 
 Private Function Tool_ReadFile(ByVal path As String, Optional ByVal maxCharsText As String = "", Optional ByVal startCharsText As String = "") As String
@@ -385,7 +595,9 @@ Private Function Tool_CreateExcel(ByVal path As String, ByVal sheetName As Strin
     Dim r As Long, c As Long
     Dim lastRow As Long, lastCol As Long
     Dim i As Long
+    Dim resultText As String
 
+    On Error GoTo ErrHandler
     safePath = ResolveSafePath(path)
     If LCase$(Right$(safePath, 5)) <> ".xlsx" And LCase$(Right$(safePath, 5)) <> ".xlsm" Then
         safePath = safePath & ".xlsx"
@@ -434,10 +646,22 @@ Private Function Tool_CreateExcel(ByVal path As String, ByVal sheetName As Strin
     End If
 
     wb.SaveAs safePath
-    wb.Close False
-    xl.Quit
+    resultText = "Excel作成完了: " & safePath
+    GoTo Cleanup
 
-    Tool_CreateExcel = "Excel作成完了: " & safePath
+ErrHandler:
+    resultText = "create_excelエラー: " & Err.Description
+
+Cleanup:
+    ' Always close the hidden Excel instance so a mid-way failure cannot
+    ' leave a zombie EXCEL.EXE behind.
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close False
+    If Not xl Is Nothing Then xl.Quit
+    Set ws = Nothing
+    Set wb = Nothing
+    Set xl = Nothing
+    Tool_CreateExcel = resultText
 End Function
 
 Private Function Tool_CreateChart(ByVal path As String, ByVal sheetName As String, ByVal sourceRange As String, ByVal chartType As String, ByVal title As String) As String
@@ -447,7 +671,9 @@ Private Function Tool_CreateChart(ByVal path As String, ByVal sheetName As Strin
     Dim ws As Object
     Dim chartObject As Object
     Dim chart As Object
+    Dim resultText As String
 
+    On Error GoTo ErrHandler
     safePath = ResolveSafePath(path)
     If LCase$(Right$(safePath, 5)) <> ".xlsx" And LCase$(Right$(safePath, 5)) <> ".xlsm" Then
         Err.Raise vbObjectError + 2101, "create_chart", "Excelファイル(.xlsx/.xlsm)を指定してください"
@@ -474,9 +700,22 @@ Private Function Tool_CreateChart(ByVal path As String, ByVal sheetName As Strin
     chart.Legend.Position = -4107
 
     wb.Save
-    wb.Close False
-    xl.Quit
-    Tool_CreateChart = "グラフ作成完了: " & safePath
+    resultText = "グラフ作成完了: " & safePath
+    GoTo Cleanup
+
+ErrHandler:
+    resultText = "create_chartエラー: " & Err.Description
+
+Cleanup:
+    On Error Resume Next
+    If Not wb Is Nothing Then wb.Close False
+    If Not xl Is Nothing Then xl.Quit
+    Set chart = Nothing
+    Set chartObject = Nothing
+    Set ws = Nothing
+    Set wb = Nothing
+    Set xl = Nothing
+    Tool_CreateChart = resultText
 End Function
 
 Private Function ChartTypeValue(ByVal chartType As String) As Long

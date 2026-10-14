@@ -14,6 +14,7 @@ ITEM|設定!B7|AutoRun|noを推奨します。書き込み・移動・削除な�
 ITEM|設定!B8|Confirm danger|yesを推奨します。危険な操作の前に確認ダイアログを表示します。
 ITEM|設定!B9|Max steps|1回の依頼でAIが進める最大ステップ数です。通常は12で十分です。
 ITEM|設定!B10|Anthropic version|Anthropic互換APIを使う場合のバージョンです。通常は2023-06-01のままにします。
+ITEM|設定!B11|Max tokens|AIが1回の応答で出力できる最大トークン数です。既定4096。長いファイル書き込みが途中で切れる場合は増やしてください。
 NOTE|配布時の注意|生成された配布ブックにはAPIキーを含めません。各ユーザーが自分のキーを設定!B3に入力し、Workspaceを設定!B6で選択してください。
 NOTE|OpenCode Zen|OpenAI互換として接続できます。Base URLは https://opencode.ai/zen/v1、モデルはRefresh modelsで取得してください。
 
@@ -25,11 +26,16 @@ ITEM|接続テスト|現在のプロバイダー・モデルで疎通を確認�
 ITEM|設定を開く|設定シートを開きます。URL、APIキー、Workspaceを変更できます。
 ITEM|ログを開く|処理の進行状況・ツール・結果を確認します。
 ITEM|安全チェック|Workspaceの実体パスと、親フォルダー・外部パスの拒否状態を確認します。
+ITEM|停止|実行中の依頼を、現在のツール完了後に停止します。会話と履歴は保存されるので「続き」と入力すれば再開できます。
+ITEM|新しい会話|会話の履歴をクリアして最初から始めます。
+NOTE|会話の継続|依頼はブックと同じ場所の .excelai-session.json に保存され、次の依頼・ブック再起動後も文脈が自動で引き継がれます。「さっきの続き」「前回のファイルを直して」が使えます。履歴が長くなると古い分は自動的に省略されます。ファイルには依頼内容やツール結果が残るため、配布前に削除してください。
 
 SECTION|AIが使えるExcel生成ツール
 ITEM|create_excel|CSV形式のデータから、数式・見出し・罫線・列幅を含むExcelファイルを作成します。
 ITEM|create_chart|既存のExcelファイルに、縦棒・横棒・折れ線・円グラフを追加します。
+ITEM|update_excel|既存のExcelファイルにシートを追加し、値や数式を書き込みます。edits に「B2==SUM(B2:B9)」のように渡すと=始まりの数式も入ります。
 ITEM|inspect_excel|xlsx/xlsm/xlsb/xlsをバイナリとして壊さずに開き、シート・使用範囲・サンプル・数式を調べます。
+ITEM|make_dir / copy_file / open_file|Workspace内にフォルダ作成、ファイル・フォルダのコピー、成果物を既定アプリで開いて見せる操作ができます。
 ITEM|read_file|テキストを最大100KBずつ読みます。大きいファイルはmax_charsとstart_charsで続きも取得できます。
 
 SECTION|AIが使えるWeb調査ツール
@@ -52,4 +58,6 @@ ITEM|接続エラー|9routerが起動しているか、Base URLが http://127.0.
 ITEM|モデルがない|設定シートの「Refresh models」を実行し、モデル一覧からモデルIDを選び直します。
 ITEM|処理が止まる|Max stepsを確認し、チャットログの最後のerror行を確認します。
 ITEM|タイムアウト|API待機時間を延長し、取得結果を次のAI呼び出しへ渡す量も制限しています。ログのstepとproviderを確認してください。
+ITEM|返答が途中で切れる|設定!B11のMax tokensを増やしてください。途切れを検知するとAIは自動で続きを書きます。
+ITEM|会話が変|「新しい会話」で履歴をリセットしてください。誤った内容が履歴に残った場合もこれで解消します。
 NOTE|このREADMEはExcelAI.xlsmの生成時に自動で作成されます。設定を変更した場合は、次回ビルド時に内容が更新されます。

@@ -21,8 +21,14 @@ Public Function JsonEscape(ByVal s As String) As String
             Case vbLf: out = out & "\n"
             Case vbTab: out = out & "\t"
             Case Else
-                If AscW(ch) < 32 Then
-                    out = out & "\u" & Right$("0000" & Hex(AscW(ch)), 4)
+                ' AscW returns a signed Integer: chars >= U+8000 (CJK) come
+                ' back negative and must be normalized before the <32 check,
+                ' otherwise kanji get wrongly \u-escaped.
+                Dim code As Long
+                code = AscW(ch)
+                If code < 0 Then code = code + 65536
+                If code < 32 Then
+                    out = out & "\u" & Right$("0000" & Hex(code), 4)
                 Else
                     out = out & ch
                 End If
@@ -53,7 +59,16 @@ Public Function JsonExtractString(ByVal json As String, ByVal key As String) As 
 
     i = i + 1
     JsonSkipWhitespace json, i
-    If i > Len(json) Or Mid$(json, i, 1) <> """" Then Exit Function
+    If i > Len(json) Then Exit Function
+    If Mid$(json, i, 1) <> """" Then
+        ' Accept bare JSON literals (models emit "recursive":true unquoted)
+        If LCase$(Left$(Mid$(json, i, 4), 4)) = "true" Then
+            JsonExtractString = "true"
+        ElseIf LCase$(Left$(Mid$(json, i, 5), 5)) = "false" Then
+            JsonExtractString = "false"
+        End If
+        Exit Function
+    End If
 
     i = i + 1
     Do While i <= Len(json)
@@ -206,8 +221,121 @@ Public Function JsonGetArg(ByVal argsJson As String, ByVal key As String) As Str
     JsonGetArg = JsonExtractString(argsJson, key)
 End Function
 
+' Removes "key":<value> from an object string for any value type.
+' Providers like the AMD sglang router reject echoed assistant messages whose
+' reasoning_content is null, so drop it (and it wastes context tokens anyway).
+Public Function JsonRemoveKey(ByVal json As String, ByVal key As String) As String
+    Dim keyPos As Long
+    Dim i As Long
+    Dim c As String
+    Dim valEnd As Long
+    Dim cutStart As Long
+    Dim cutEnd As Long
+
+    JsonRemoveKey = json
+    On Error Resume Next
+    keyPos = InStr(1, json, """" & key & """", vbTextCompare)
+    If keyPos = 0 Then Exit Function
+
+    i = keyPos + Len(key) + 2
+    Do While i <= Len(json) And Mid$(json, i, 1) <= " "
+        i = i + 1
+    Loop
+    If i > Len(json) Or Mid$(json, i, 1) <> ":" Then Exit Function
+    i = i + 1
+    Do While i <= Len(json) And Mid$(json, i, 1) <= " "
+        i = i + 1
+    Loop
+    c = Mid$(json, i, 1)
+
+    If c = """" Then
+        Dim esc As Boolean
+        Dim j As Long
+        esc = False
+        For j = i + 1 To Len(json)
+            c = Mid$(json, j, 1)
+            If esc Then
+                esc = False
+            ElseIf c = "\" Then
+                esc = True
+            ElseIf c = """" Then
+                Exit For
+            End If
+        Next j
+        valEnd = j
+    ElseIf c = "{" Or c = "[" Then
+        valEnd = JsonFindClosingDelimiter(json, i, c, IIf(c = "{", "}", "]"))
+        If valEnd = 0 Then Exit Function
+    Else
+        valEnd = i - 1
+        Do While valEnd + 1 <= Len(json)
+            c = Mid$(json, valEnd + 1, 1)
+            If c = "," Or c = "}" Or c = "]" Or c = " " Or c = vbCr Or c = vbLf Then Exit Do
+            valEnd = valEnd + 1
+        Loop
+    End If
+
+    cutStart = keyPos
+    cutEnd = valEnd
+    If Mid$(json, cutEnd + 1, 1) = "," Then
+        cutEnd = cutEnd + 1
+    Else
+        ' last member of an object: also swallow the comma before the key
+        Dim b As Long
+        b = keyPos - 1
+        Do While b >= 1 And Mid$(json, b, 1) = " "
+            b = b - 1
+        Loop
+        If Mid$(json, b, 1) = "," Then cutStart = b
+    End If
+    JsonRemoveKey = Left$(json, cutStart - 1) & Mid$(json, cutEnd + 1)
+End Function
+
+' Drops "key":null entirely (bare null only) — some strict routers 400 on nulls.
+Public Function JsonRemoveNullKey(ByVal json As String, ByVal key As String) As String
+    Dim keyPos As Long
+    Dim i As Long
+    JsonRemoveNullKey = json
+    keyPos = InStr(1, json, """" & key & """", vbTextCompare)
+    If keyPos = 0 Then Exit Function
+    i = keyPos + Len(key) + 2
+    Do While i <= Len(json) And Mid$(json, i, 1) <= " "
+        i = i + 1
+    Loop
+    If i > Len(json) Or Mid$(json, i, 1) <> ":" Then Exit Function
+    i = i + 1
+    Do While i <= Len(json) And Mid$(json, i, 1) <= " "
+        i = i + 1
+    Loop
+    If LCase$(Left$(Mid$(json, i, 4), 4)) = "null" Then JsonRemoveNullKey = JsonRemoveKey(json, key)
+End Function
+
+' True only when "tool_calls" is present with an ARRAY value. sglang-style
+' routers return "tool_calls":null on plain text answers; a bare substring
+' match there made the agent think every answer was a tool call and loop.
 Public Function JsonHasToolCalls(ByVal json As String) As Boolean
-    JsonHasToolCalls = (InStr(1, json, """tool_calls""", vbTextCompare) > 0)
+    Dim pos As Long
+    Dim i As Long
+    pos = 1
+    Do
+        pos = InStr(pos, json, """tool_calls""", vbTextCompare)
+        If pos = 0 Then Exit Function
+        i = pos + 12
+        Do While i <= Len(json) And Mid$(json, i, 1) <= " "
+            i = i + 1
+        Loop
+        If i <= Len(json) And Mid$(json, i, 1) = ":" Then
+            i = i + 1
+            Do While i <= Len(json) And Mid$(json, i, 1) <= " "
+                i = i + 1
+            Loop
+            If i <= Len(json) And Mid$(json, i, 1) = "[" Then
+                JsonHasToolCalls = True
+                Exit Function
+            End If
+        End If
+        pos = pos + 12
+    Loop
 End Function
 
 Public Function JsonBuildToolResult(ByVal toolCallId As String, ByVal content As String) As String

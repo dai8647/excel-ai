@@ -126,8 +126,8 @@ try {
     $ws.Tab.Color = $blue
     $ws.Range("A1:C1").Merge()
     $ws.Cells.Item(1, 1).Value2 = "ExcelAI | Connection settings"
-    $labels = @("Connection type", "API Key", "Base URL", "Model", "Workspace", "AutoRun", "Confirm danger", "Max steps", "Anthropic version")
-    $hints = @("OpenAI or Anthropic", "Enter the selected provider's API key; never share it", "OpenAI includes /v1. Anthropic does not.", "Refresh models, then select one", "Enter this PC's folder path; workspace is the portable default", "No is recommended", "Yes is recommended", "12 is a safe start", "Native Anthropic API version")
+    $labels = @("Connection type", "API Key", "Base URL", "Model", "Workspace", "AutoRun", "Confirm danger", "Max steps", "Anthropic version", "Max tokens")
+    $hints = @("OpenAI or Anthropic", "Enter the selected provider's API key; never share it", "OpenAI includes /v1. Anthropic does not.", "Refresh models, then select one", "Enter this PC's folder path; workspace is the portable default", "No is recommended", "Yes is recommended", "12 is a safe start", "Native Anthropic API version", "Output cap per model reply. 4096 recommended; raise it if long writes get truncated.")
     for ($i = 0; $i -lt $labels.Count; $i++) { $ws.Cells.Item($i + 2, 1).Value2 = $labels[$i]; $ws.Cells.Item($i + 2, 3).Value2 = $hints[$i] }
     $ws.Cells.Item(2, 2).Value2 = "OpenAI"
     $ws.Cells.Item(3, 2).NumberFormat = "@"
@@ -135,25 +135,26 @@ try {
     # The key may be used transiently below to fetch the model catalog, but
     # each user must enter their own key in 設定!B3 after opening the file.
     $ws.Cells.Item(3, 2).Value2 = ""
-    $ws.Cells.Item(4, 2).Value2 = "http://127.0.0.1:20128/v1"
+    $ws.Cells.Item(4, 2).Value2 = "https://api.openai.com/v1"
     $ws.Cells.Item(6, 2).Value2 = "workspace"
     $ws.Cells.Item(7, 2).Value2 = "no"
     $ws.Cells.Item(8, 2).Value2 = "yes"
     $ws.Cells.Item(9, 2).Value2 = 12
     $ws.Cells.Item(10, 2).NumberFormat = "@"
     $ws.Cells.Item(10, 2).Value2 = "2023-06-01"
+    $ws.Cells.Item(11, 2).Value2 = 4096
     $ws.Columns.Item("A").ColumnWidth = 24; $ws.Columns.Item("B").ColumnWidth = 48; $ws.Columns.Item("C").ColumnWidth = 56
     $ws.Range("A1:C1").Interior.Color = $navy; $ws.Range("A1:C1").Font.Color = $white; $ws.Range("A1:C1").Font.Bold = $true; $ws.Range("A1:C1").Font.Size = 16
-    $ws.Range("A2:A10").Interior.Color = $lightBlue; $ws.Range("A2:A10").Font.Bold = $true; $ws.Range("B2:B10").Interior.Color = $inputFill; $ws.Range("B2:B10").Font.Color = $deepNavy; $ws.Range("C2:C10").Interior.Color = $pale; $ws.Range("C2:C10").Font.Color = $muted; $ws.Range("A2:C10").Borders.LineStyle = 1
-    $ws.Rows("1:10").RowHeight = 23; $ws.Rows.Item(1).RowHeight = 30
-    $ws.Range("A12:C12").Merge(); $ws.Cells.Item(12, 1).Value2 = "Input cells are pale yellow. Test the connection after changing settings."; $ws.Range("A12:C12").Interior.Color = $pale; $ws.Range("A12:C12").Font.Color = $muted; $ws.Rows.Item(12).RowHeight = 24
+    $ws.Range("A2:A11").Interior.Color = $lightBlue; $ws.Range("A2:A11").Font.Bold = $true; $ws.Range("B2:B11").Interior.Color = $inputFill; $ws.Range("B2:B11").Font.Color = $deepNavy; $ws.Range("C2:C11").Interior.Color = $pale; $ws.Range("C2:C11").Font.Color = $muted; $ws.Range("A2:C11").Borders.LineStyle = 1
+    $ws.Rows("1:11").RowHeight = 23; $ws.Rows.Item(1).RowHeight = 30
+    $ws.Range("A13:C13").Merge(); $ws.Cells.Item(13, 1).Value2 = "Input cells are pale yellow. Test the connection after changing settings."; $ws.Range("A13:C13").Interior.Color = $pale; $ws.Range("A13:C13").Font.Color = $muted; $ws.Rows.Item(13).RowHeight = 24
     $ws.Range("B2").Validation.Add(3, 1, 1, "OpenAI,Anthropic")
     $ws.Range("B7:B8").Validation.Add(3, 1, 1, "yes,no")
 
     $ops = $wb.Worksheets.Item(3)
     $ops.Tab.Color = $teal
     $ops.Range("A1:H1").Merge(); $ops.Cells.Item(1, 1).Value2 = "ExcelAI | Home"
-    $ops.Range("A2:H2").Merge(); $ops.Cells.Item(2, 1).Value2 = "Write a request, then press Ctrl+Enter. Progress and results stay here."
+    $ops.Range("A2:H2").Merge(); $ops.Cells.Item(2, 1).Value2 = "Write a request, then press Ctrl+Enter. Follow-ups continue the same conversation; New chat starts over."
     $ops.Range("A1:H1").Interior.Color = $navy; $ops.Range("A1:H1").Font.Color = $white; $ops.Range("A1:H1").Font.Bold = $true; $ops.Range("A1:H1").Font.Size = 20
     $ops.Range("A2:H2").Interior.Color = $pale; $ops.Range("A2:H2").Font.Color = $muted; $ops.Range("A2:H2").Font.Size = 11
     $ops.Columns.Item("A").ColumnWidth = 18; $ops.Columns.Item("B").ColumnWidth = 20
@@ -184,6 +185,8 @@ try {
         @("Refresh models", "RefreshModels", $blue),
         @("Test connection", "TestConnection", $teal),
         @("Open settings", "OpenSettings", $navy),
+        @("Stop", "Agent_RequestStop", 192),
+        @("New chat", "Session_Reset", $navy),
         @("Workspace", "OpenWorkspaceFolder", $amber),
         @("Choose folder", "PickWorkspaceFolder", $amber),
         @("Safety check", "WorkspaceSafetyCheck", $teal),
@@ -191,9 +194,9 @@ try {
     )
     $buttonIndex = 0
     foreach ($spec in $buttonSpecs) {
-        $buttonRow = [math]::Floor($buttonIndex / 4)
-        $buttonColumn = $buttonIndex % 4
-        $button = $ops.Buttons().Add((20 + ($buttonColumn * 180)), (245 + ($buttonRow * 38)), 165, 28)
+        $buttonRow = [math]::Floor($buttonIndex / 5)
+        $buttonColumn = $buttonIndex % 5
+        $button = $ops.Buttons().Add((20 + ($buttonColumn * 172)), (245 + ($buttonRow * 38)), 158, 28)
         $button.Characters().Text = $spec[0]
         $button.OnAction = $spec[1]
         $button.PrintObject = $true

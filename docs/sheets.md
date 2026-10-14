@@ -15,6 +15,7 @@ A7: AutoRun           → はい / いいえ
 A8: Confirm danger    → はい / いいえ
 A9: Max steps         → 12 など
 A10: Anthropic version → 2023-06-01
+A11: Max tokens       → 4096 など（1応答あたりの出力上限）
 ```
 
 名前付き範囲（推奨）:
@@ -39,6 +40,8 @@ A10: Anthropic version → 2023-06-01
 - 「フォルダ選択」 → `PickWorkspaceFolder`
 - 「ログを開く」 → `OpenChatLog`
 - 「安全チェック」 → `WorkspaceSafetyCheck`
+- 「停止」 → `Agent_RequestStop`
+- 「新しい会話」 → `Session_Reset`
 
 ## モデル一覧（「モデル一覧」）
 
@@ -49,3 +52,10 @@ A10: Anthropic version → 2023-06-01
 | A: 日時 | B: 種別 | C: 内容 |
 |---------|---------|---------|
 | user / assistant / tool / tool_result / progress / system / error |
+
+## 会話セッション（シートではない）
+
+会話履歴はブックと同じ場所の隠しファイル `.excelai-session.json` に保存される。
+再読み込み・ブック再起動後も自動で継続。「新しい会話」(`Session_Reset`) で削除。
+ツール呼び出し途中で終わっている末尾メッセージは復元時に破棄される。
+内容は依頼・ツール結果・ファイル内容をそのまま含むため、配布・共有前に削除すること。

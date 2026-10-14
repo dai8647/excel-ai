@@ -1,7 +1,7 @@
 Attribute VB_Name = "modSettings"
 Option Explicit
 
-Public Const APP_VERSION As String = "1.2.0"
+Public Const APP_VERSION As String = "1.4.0"
 Public Const SHEET_SETTINGS As String = "設定"
 Public Const SHEET_CHATLOG As String = "チャットログ"
 Public Const SHEET_OPS As String = "ホーム"
@@ -16,6 +16,7 @@ Private Const ROW_AUTO_RUN As Long = 7
 Private Const ROW_CONFIRM_DANGER As Long = 8
 Private Const ROW_MAX_STEPS As Long = 9
 Private Const ROW_ANTHROPIC_VERSION As Long = 10
+Private Const ROW_MAX_TOKENS As Long = 11
 
 Public Function GetSettingValue(ByVal labelRow As Long) As String
     GetSettingValue = Trim$(CStr(ThisWorkbook.Worksheets(SHEET_SETTINGS).Cells(labelRow, 2).Value))
@@ -98,6 +99,11 @@ Public Function GetAnthropicVersion() As String
     If Len(GetAnthropicVersion) = 0 Then GetAnthropicVersion = "2023-06-01"
 End Function
 
+Public Function GetMaxTokens() As Long
+    GetMaxTokens = Val(GetSettingValue(ROW_MAX_TOKENS))
+    If GetMaxTokens < 256 Then GetMaxTokens = 4096
+End Function
+
 Private Function ParseYesNo(ByVal s As String, ByVal defaultYes As Boolean) As Boolean
     Select Case LCase$(Trim$(s))
         Case "はい", "yes", "y", "true", "1", "on": ParseYesNo = True
@@ -131,12 +137,14 @@ End Sub
 
 Public Sub InitDefaultSettings()
     If Len(GetSettingValue(ROW_PROVIDER)) = 0 Then SetSettingValue ROW_PROVIDER, "OpenAI"
-    If Len(GetSettingValue(ROW_BASE_URL)) = 0 Then SetSettingValue ROW_BASE_URL, "http://127.0.0.1:20128/v1"
+    ' Neutral public default so a fresh copy works after only entering a key.
+    If Len(GetSettingValue(ROW_BASE_URL)) = 0 Then SetSettingValue ROW_BASE_URL, "https://api.openai.com/v1"
     If Len(GetSettingValue(ROW_WORKSPACE)) = 0 Then SetSettingValue ROW_WORKSPACE, "workspace"
     If Len(GetSettingValue(ROW_AUTO_RUN)) = 0 Then SetSettingValue ROW_AUTO_RUN, "いいえ"
     If Len(GetSettingValue(ROW_CONFIRM_DANGER)) = 0 Then SetSettingValue ROW_CONFIRM_DANGER, "はい"
     If Len(GetSettingValue(ROW_MAX_STEPS)) = 0 Then SetSettingValue ROW_MAX_STEPS, "12"
     If Len(GetSettingValue(ROW_ANTHROPIC_VERSION)) = 0 Then SetSettingValue ROW_ANTHROPIC_VERSION, "2023-06-01"
+    If Len(GetSettingValue(ROW_MAX_TOKENS)) = 0 Then SetSettingValue ROW_MAX_TOKENS, "4096"
     EnsureWorkspaceExists
 End Sub
 
@@ -197,7 +205,7 @@ Public Sub ClearChatLog()
     Set ws = ThisWorkbook.Worksheets(SHEET_CHATLOG)
     If MsgBox("チャットログをクリアしますか？", vbYesNo + vbQuestion) = vbYes Then
         ws.Rows("2:" & ws.Rows.Count).ClearContents
-        GetOpsSheet().Range("B21").ClearContents
+        GetOpsSheet().Range("B21").Value = ""    ' merged: ClearContents raises 1004
         Ops_WriteProgress "ログと結果をクリアしました", False
     End If
 End Sub

@@ -13,3 +13,6 @@ env.txt
 # Windows and editor artifacts.
 Thumbs.db
 .vs/
+
+# Conversation transcript (may contain user prompts and tool results).
+.excelai-session.json

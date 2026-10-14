@@ -10,6 +10,9 @@ Private Sub Workbook_Open()
         Ops_WriteProgress "Workspace ready", (InStr(1, safetyReport, "Workspace safety: OK", vbTextCompare) = 0)
         ThisWorkbook.Saved = True
     End If
+    If Session_MessageCount() > 0 Then
+        Ops_WriteProgress "前回の会話（" & Session_MessageCount() & " メッセージ）を継続します。「新しい会話」で最初から", False
+    End If
     On Error GoTo 0
     ShowHome
 End Sub

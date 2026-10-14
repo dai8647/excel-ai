@@ -17,10 +17,13 @@ OpenClaude の「ツールループ + プロバイダ切替 + サンドボック
 
 ## 機能
 
-- チャット UI（UserForm）
+- ホームシート型のチャット画面（依頼→実行→進行表示→結果）
+- 会話の連続性 — 履歴を自動保存し、「さっきの続き」「前回のファイルを直して」が通じる。ブック再起動後も継続。「新しい会話」でリセット
+- 実行中の停止ボタン（現在のツール完了後に安全に停止、履歴は保持）
 - クラウド API / ローカル LLM（LM Studio 等、Ollama 不要）
-- 作業場所サンドボックス内のファイル操作
-- 計算式付きExcelファイルとグラフの生成
+- 作業場所サンドボックス内のファイル操作（作成/コピー/移動/削除/フォルダ作成/再帰リスト）
+- 計算式付きExcelファイルとグラフの生成、既存ブックへのシート追加・値/数式書き込み（`update_excel`）
+- 成果物を既定アプリで開いて見せる `open_file`
 - 既存xlsx/xlsm/xlsb/xlsの構造・シート・数式の読み取り
 - 公開Webページ・APIレスポンスの取得（読み取り専用 `web_fetch`）
 - 自動実行 ON/OFF（設定で切替）
@@ -31,19 +34,22 @@ OpenClaude の「ツールループ + プロバイダ切替 + サンドボック
 
 ```
 エクセルAI/
-├── ExcelAI.xlsm          ← 配布物（要ビルド or 手動作成）
+├── ExcelAI.xlsm          ← 配布物（build-xlsm.ps1 で生成）
+├── .excelai-session.json ← 会話履歴（自動生成・配布前に削除）
 ├── vba/                  ← VBA ソース（インポート用）
+├── scripts/              ← build-xlsm.ps1（xlsm 生成）
 ├── workspace/            ← デフォルト作業場所（AI の作業範囲）
-├── templates/            ← xlsm テンプレート等
 └── docs/                 ← セットアップ・シート構成
 ```
 
 ## クイックスタート
 
 1. [docs/SETUP.md](docs/SETUP.md) を読む
-2. `vba/` のモジュールを `.xlsm` にインポート
+2. `powershell -File scripts/build-xlsm.ps1` で `ExcelAI.xlsm` を生成（または `vba/` を手動インポート）
 3. `設定` シートで API / 作業場所を設定
 4. `ホーム` → Request欄に依頼を書き、実行ボタンまたは `Ctrl+Enter`
+
+完成後は `Application.Run "SelfTest_Run"`（PowerShell からでも可）で自己テストが実行できます。
 
 ## デフォルト作業場所
 
