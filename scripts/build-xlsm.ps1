@@ -306,7 +306,9 @@ try {
     $pluginsSheet.Visible = 0
 
     $vbProj = $wb.VBProject
-    $importRoot = Join-Path $env:TEMP "ExcelAI-vba-import"
+    $importLeaf = "ExcelAI-vba-import"
+    if ($env:EXCELAIBUILDTEMP) { $importLeaf = $env:EXCELAIBUILDTEMP }
+    $importRoot = Join-Path $env:TEMP $importLeaf
     if (Test-Path $importRoot) { Remove-Item $importRoot -Recurse -Force }
     Copy-Item $vbaDir $importRoot -Recurse
 
